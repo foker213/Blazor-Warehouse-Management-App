@@ -28,9 +28,9 @@ internal sealed class ShipmentResourceConfiguration : IEntityTypeConfiguration<S
 
         builder.HasOne(x => x.UnitOfMeasure)
             .WithOne(x => x.ShipmentResource)
-            .HasForeignKey<ShipmentResource>(x => x.UnitId);
+            .HasForeignKey<ShipmentResource>(x => x.UnitOfMeasureId);
 
-        builder.Property(x => x.UnitId)
+        builder.Property(x => x.UnitOfMeasureId)
             .HasComment("Прикрепленная единица измерения");
 
         builder.HasOne(b => b.ShipmentDocument)

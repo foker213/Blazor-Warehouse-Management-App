@@ -6,8 +6,4 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>WarehouseManagement.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <Folder Include="Repositories\" />
-	</ItemGroup>
 </Project>

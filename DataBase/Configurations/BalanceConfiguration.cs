@@ -25,9 +25,9 @@ internal sealed class BalanceConfiguration : IEntityTypeConfiguration<Balance>
 
         builder.HasOne(x => x.UnitOfMeasure)
             .WithOne(x => x.Balance)
-            .HasForeignKey<Balance>(x => x.UnitId);
+            .HasForeignKey<Balance>(x => x.UnitOfMeasureId);
 
-        builder.Property(x => x.UnitId)
+        builder.Property(x => x.UnitOfMeasureId)
             .HasComment("Прикрепленная единица измерения");
 
         builder.Property(x => x.Quantity)

@@ -28,9 +28,9 @@ internal sealed class ReceiptResourceConfiguration : IEntityTypeConfiguration<Re
 
         builder.HasOne(x => x.UnitOfMeasure)
             .WithOne(x => x.ReceiptResource)
-            .HasForeignKey<ReceiptResource>(x => x.UnitId);
+            .HasForeignKey<ReceiptResource>(x => x.UnitOfMeasureId);
 
-        builder.Property(x => x.UnitId)
+        builder.Property(x => x.UnitOfMeasureId)
             .HasComment("Прикрепленная единица измерения");
 
         builder.HasOne(b => b.ReceiptDocument)          

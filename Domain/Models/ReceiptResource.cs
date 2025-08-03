@@ -12,7 +12,7 @@ public class ReceiptResource : Entity
     /// Прикрепленная единица измерения
     /// </summary>
     public UnitOfMeasure UnitOfMeasure { get; set; } = default!;
-    public int UnitId { get; set; }
+    public int UnitOfMeasureId { get; set; }
 
     /// <summary>
     /// Количество
