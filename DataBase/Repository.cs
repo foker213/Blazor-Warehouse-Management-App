@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ErrorOr;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Domain;
 
 namespace WarehouseManagement.DataBase;
@@ -18,33 +19,47 @@ public abstract class Repository<T> : IRepository<T> where T : class, IEntity
     {
         return DbSet.AsQueryable();
     }
-    public async Task<List<T>> GetAll()
+    public async Task<List<T>> GetAll(CancellationToken ct = default)
     {
         IQueryable<T> query = GetQuery();
-        return await query.ToListAsync();
+        return await query.ToListAsync(ct);
     }
 
-    public virtual async Task<T?> GetBy(int id)
+    public virtual async Task<ErrorOr<T>> GetBy(int id, CancellationToken ct = default)
     {
         IQueryable<T> query = GetQuery();
-        return await query.Where(x => x.Id == id).FirstOrDefaultAsync();
+        T? item = await query.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
+
+        if (item is null)
+            return Error.NotFound();
+        return item;
     }
-    public virtual async Task CreateAsync(T entity)
+    public virtual async Task<ErrorOr<Created>> CreateAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Add(entity);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
+
+        return new Created();
     }
 
-    public virtual async Task UpdateAsync(T entity)
+    public virtual async Task<ErrorOr<Updated>> UpdateAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Update(entity);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
+
+        return new Updated();
     }
 
-    public virtual async Task DeleteAsync(int id)
+    public virtual async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default)
     {
-        T entity = await GetBy(id) ?? throw new ArgumentNullException(nameof(id));
-        DbSet.Remove(entity);
-        await _db.SaveChangesAsync();
+        ErrorOr<T> entity = await GetBy(id);
+
+        if(entity.IsError)
+            return entity.FirstError;
+
+        DbSet.Remove(entity.Value);
+        await _db.SaveChangesAsync(ct);
+
+        return new Deleted();
     }
 }

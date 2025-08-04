@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using WarehouseManagement.DataBase.Interceptors;
 
 namespace WarehouseManagement.DataBase;
 
@@ -8,7 +9,9 @@ public class WarehouseDbContextFactory : IDesignTimeDbContextFactory<WarehouseDb
     public WarehouseDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<WarehouseDbContext>();
-        optionsBuilder.UseNpgsql("Server=127.0.0.1;Port=5432;Database=Warehouse;User Id=guest;Password=guest;Pooling=true;");
+        optionsBuilder
+            .UseNpgsql("Server=127.0.0.1;Port=5432;Database=Warehouse;User Id=guest;Password=guest;Pooling=true;")
+            .AddInterceptors(new BalanceUpdateInterceptor());
 
         return new WarehouseDbContext(optionsBuilder.Options);
     }
