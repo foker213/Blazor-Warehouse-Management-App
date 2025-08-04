@@ -1,14 +1,14 @@
-﻿using WarehouseManagement.Contracts;
+﻿using WarehouseManagement.Application.IRepositories;
+using WarehouseManagement.Contracts;
 using WarehouseManagement.Domain.Models;
-using WarehouseManagement.Domain.Repositories;
 
 namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class BalanceRepository(WarehouseDbContext db) :
     Repository<Balance>(db),
-    IBalanceRepository<FilterDto>
+    IBalanceRepository
 {
-    public Task<List<Balance>> FilterAsync(FilterDto filter)
+    public Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
         throw new NotImplementedException();
     }

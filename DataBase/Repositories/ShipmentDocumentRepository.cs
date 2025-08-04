@@ -1,19 +1,20 @@
-﻿using WarehouseManagement.Contracts;
+﻿using ErrorOr;
+using WarehouseManagement.Application.IRepositories;
+using WarehouseManagement.Contracts;
 using WarehouseManagement.Domain.Models;
-using WarehouseManagement.Domain.Repositories;
 
 namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
     Repository<ShipmentDocument>(db),
-    IShipmentDocumentRepository<FilterDto>
+    IShipmentDocumentRepository
 {
-    public Task ChangeStatusAsync(int id)
+    public Task<ErrorOr<Updated>> ChangeStatusAsync(int id, CancellationToken ct = default)
     {
         throw new NotImplementedException();
     }
 
-    public Task<List<Balance>> FilterAsync(FilterDto filter)
+    public Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
         throw new NotImplementedException();
     }

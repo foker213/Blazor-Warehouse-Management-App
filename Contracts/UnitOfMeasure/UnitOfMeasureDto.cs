@@ -1,8 +1,8 @@
 ﻿using WarehouseManagement.Contracts.Enums;
 
-namespace WarehouseManagement.Contracts.Resource;
+namespace WarehouseManagement.Contracts.UnitOfMeasure;
 
-public class ResourceDto
+public class UnitOfMeasureDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }

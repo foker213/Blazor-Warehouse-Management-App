@@ -1,8 +1,10 @@
 using WarehouseManagement.DataBase;
+using WarehouseManagement.Application;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services
+    .AddApplication()
     .AddDataBase(builder.Configuration);
 
 WebApplication app = builder.Build();
