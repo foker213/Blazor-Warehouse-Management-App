@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IShipmentDocumentService, ShipmentDocumentService>();
         services.AddScoped<IUnitOfMeasureService, UnitOfMeasureService>();
+        services.AddScoped<IUnitOfMeasureService, UnitOfMeasureService>();
 
         return services;
     }

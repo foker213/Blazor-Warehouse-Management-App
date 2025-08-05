@@ -1,9 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Data.Common;
+using WarehouseManagement.Application;
 using WarehouseManagement.Domain.Models;
 
 namespace WarehouseManagement.DataBase;
 
-public class WarehouseDbContext : DbContext
+public class WarehouseDbContext : DbContext, IUnitOfWork
 {
     public WarehouseDbContext(DbContextOptions<WarehouseDbContext> options)
         : base(options)
@@ -18,6 +21,22 @@ public class WarehouseDbContext : DbContext
     public DbSet<ShipmentDocument> ShipmentDocuments => Set<ShipmentDocument>();
     public DbSet<ShipmentResource> ShipmentResources => Set<ShipmentResource>();
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
+
+    public DbTransaction? DbTransaction => Database.CurrentTransaction?.GetDbTransaction();
+
+    public async Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        return transaction.GetDbTransaction();
+    }
+
+    public Task CommitTransactionAsync(CancellationToken cancellationToken = default) =>
+        Database.CommitTransactionAsync(cancellationToken);
+
+    public Task RollbackTransactionAsync(CancellationToken cancellationToken = default) =>
+        Database.RollbackTransactionAsync(cancellationToken);
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => base.SaveChangesAsync(cancellationToken);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

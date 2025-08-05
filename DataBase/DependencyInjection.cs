@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WarehouseManagement.Application;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.DataBase.Repositories;
 
@@ -19,7 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<IShipmentDocumentRepository, ShipmentDocumentRepository>();
         services.AddScoped<IUnitOfMeasureRepository, UnitOfMeasureRepository>();
-
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<WarehouseDbContext>());
 
         return services;
     }
