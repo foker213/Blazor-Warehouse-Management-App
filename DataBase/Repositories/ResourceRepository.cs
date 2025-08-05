@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Domain.Models;
 
@@ -7,9 +8,12 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class ResourceRepository(WarehouseDbContext db) : Repository<Resource>(db), IResourceRepository
 {
-    public Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> ChangeStateAsync(Resource resource, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        DbSet.Entry(resource).Property(x => x.State).IsModified = true;
+        await db.SaveChangesAsync();
+
+        return new Updated();
     }
 
     public override async Task<ErrorOr<Deleted>> DeleteAsync(Resource resource, CancellationToken ct = default)

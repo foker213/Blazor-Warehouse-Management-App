@@ -9,9 +9,17 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
     Repository<Balance>(db),
     IBalanceRepository
 {
-    public Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
+    public async Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        IQueryable<Balance> query = GetQuery();
+
+        if (!string.IsNullOrEmpty(filter.Resource))
+            query = query.Where(x => x.Resource.Name.ToLower() == filter.Resource);
+
+        if (!string.IsNullOrEmpty(filter.UnitOfMeasure))
+            query = query.Where(x => x.UnitOfMeasure.Name.ToLower() == filter.UnitOfMeasure);
+
+        return await query.ToListAsync(ct);
     }
 
     public async Task<Balance?> GetByResourceIdAndUnitId(int resourceId, int unitId, CancellationToken ct = default)

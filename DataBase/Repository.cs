@@ -35,44 +35,23 @@ public abstract class Repository<T> : IRepository<T> where T : class, IEntity
     {
         DbSet.Add(entity);
 
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-            return Result.Created;
-        }
-        catch
-        {
-            return Error.Failure("CreateFailed", "Ошибка при сохранении записи");
-        }
+        await _db.SaveChangesAsync(ct);
+        return new Created();
     }
 
     public virtual async Task<ErrorOr<Updated>> UpdateAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Update(entity);
 
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-            return new Updated();
-        }
-        catch
-        {
-            return Error.Failure("UpdateFailed", "Ошибка при обновлении записи");
-        }
+        await _db.SaveChangesAsync(ct);
+        return new Updated();
     }
 
     public virtual async Task<ErrorOr<Deleted>> DeleteAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Remove(entity);
 
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-            return new Deleted();
-        }
-        catch
-        {
-            return Error.Failure("DeleteFailed", "Ошибка при удалении записи");
-        }
+        await _db.SaveChangesAsync(ct);
+        return new Deleted();
     }
 }

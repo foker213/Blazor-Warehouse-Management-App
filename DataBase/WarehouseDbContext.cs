@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ErrorOr;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Data.Common;
 using WarehouseManagement.Application;
@@ -30,11 +31,25 @@ public class WarehouseDbContext : DbContext, IUnitOfWork
         return transaction.GetDbTransaction();
     }
 
-    public Task CommitTransactionAsync(CancellationToken cancellationToken = default) =>
-        Database.CommitTransactionAsync(cancellationToken);
+    public async Task<Error?> CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            await Database.CommitTransactionAsync(cancellationToken);
 
-    public Task RollbackTransactionAsync(CancellationToken cancellationToken = default) =>
-        Database.RollbackTransactionAsync(cancellationToken);
+            return default;
+        }
+        catch(Exception ex)
+        {
+            await RollbackTransactionAsync(cancellationToken);
+
+            return Error.Failure("OperationFailed", "Не удалось выполнить операцию");
+        }
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default) =>
+        await Database.RollbackTransactionAsync(cancellationToken);
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => base.SaveChangesAsync(cancellationToken);
 

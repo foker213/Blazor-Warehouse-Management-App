@@ -6,4 +6,9 @@ public class ReceiptDocumentDto
     public required string Number { get; set; }
     public DateTime Date { get; set; }
     public List<ReceiptResourceDto>? ReceiptResources { get; set; }
+
+    public bool HasResources()
+    {
+        return ReceiptResources != null && ReceiptResources.Count > 0;
+    }
 }

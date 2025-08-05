@@ -3,6 +3,7 @@ using Mapster;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Application.IServices;
 using WarehouseManagement.Contracts.Client;
+using WarehouseManagement.Domain.Enums;
 using WarehouseManagement.Domain.Models;
 
 namespace WarehouseManagement.Application.Services;
@@ -80,7 +81,18 @@ internal sealed class ClientService : IClientService
     }
 
     public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
-        => await _clientRepository.ChangeStateAsync(id, ct);
+    {
+        Client? resource = await _clientRepository.GetBy(id, ct);
+        if (resource == null)
+            return Error.NotFound("ClientNotFound", "Клиент не найден");
+
+        if (resource.State == State.InWork)
+            resource.State = State.InArchive;
+        else
+            resource.State = State.InWork;
+
+        return await _clientRepository.ChangeStateAsync(resource, ct);
+    }
 
     private async Task<Error?> ValidateClient(ClientDto client, CancellationToken ct)
     {

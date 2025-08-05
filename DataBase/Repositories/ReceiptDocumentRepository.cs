@@ -9,9 +9,37 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
     Repository<ReceiptDocument>(db),
     IReceiptDocumentRepository
 {
-    public Task<List<ReceiptDocument>> FilterAsync(FilterDto filter, CancellationToken ct = default)
+    public async Task<List<ReceiptDocument>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        IQueryable<ReceiptDocument> query = GetQuery();
+
+        if (!string.IsNullOrEmpty(filter.Number))
+        {
+            query = query.Where(x => x.Number.ToLower() == filter.Number.ToLower());
+        }
+
+        query = query.Where(x => x.Date >= filter.DateStart!.Value);
+
+        DateTime endDate = filter.DateEnd!.Value.AddDays(1);
+        query = query.Where(x => x.Date < endDate);
+
+        query = query.Where(x => x.ReceiptResources != null && x.ReceiptResources.Any());
+
+        if (!string.IsNullOrEmpty(filter.Resource))
+        {
+            query = query.Where(x => x.ReceiptResources!
+                .Any(r => r.Resource != null &&
+                         r.Resource.Name.ToLower() == filter.Resource.ToLower()));
+        }
+
+        if (!string.IsNullOrEmpty(filter.UnitOfMeasure))
+        {
+            query = query.Where(x => x.ReceiptResources!
+                .Any(r => r.UnitOfMeasure != null &&
+                         r.UnitOfMeasure.Name.ToLower() == filter.UnitOfMeasure.ToLower()));
+        }
+
+        return await query.ToListAsync(ct);
     }
 
     public async Task<ReceiptDocument?> GetByNumber(string number, CancellationToken ct = default)

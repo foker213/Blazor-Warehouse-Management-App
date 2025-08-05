@@ -24,12 +24,14 @@ public class CommonMappingRegister : IRegister
         config.NewConfig<ReceiptResourceDto, ReceiptResource>();
         config.NewConfig<ReceiptResource, ReceiptResourceDto>();
         config.NewConfig<List<ReceiptResource>, List<ReceiptResourceDto>>();
+        config.NewConfig<List<ReceiptResourceDto>, List<ReceiptResource>>();
 
         config.NewConfig<ShipmentDocumentDto, ShipmentDocument>();
         config.NewConfig<ShipmentDocument, ShipmentDocumentDto>();
         config.NewConfig<ShipmentResourceDto, ShipmentResource>();
         config.NewConfig<ShipmentResource, ShipmentResourceDto>();
         config.NewConfig<List<ShipmentResource>, List<ShipmentResourceDto>>();
+        config.NewConfig<List<ShipmentResourceDto>, List<ShipmentResource>>();
 
         config.NewConfig<ResourceDto, Resource>();
         config.NewConfig<Resource, ResourceDto>();

@@ -7,9 +7,12 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class ClientRepository(WarehouseDbContext db) : Repository<Client>(db), IClientRepository
 {
-    public Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> ChangeStateAsync(Client client, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        DbSet.Entry(client).Property(x => x.State).IsModified = true;
+        await db.SaveChangesAsync();
+
+        return new Updated();
     }
 
     public override async Task<ErrorOr<Deleted>> DeleteAsync(Client client, CancellationToken ct = default)

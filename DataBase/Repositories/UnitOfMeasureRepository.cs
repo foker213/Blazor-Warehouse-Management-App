@@ -7,9 +7,12 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class UnitOfMeasureRepository(WarehouseDbContext db) : Repository<UnitOfMeasure>(db), IUnitOfMeasureRepository
 {
-    public Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> ChangeStateAsync(UnitOfMeasure unit, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        DbSet.Entry(unit).Property(x => x.State).IsModified = true;
+        await db.SaveChangesAsync();
+
+        return new Updated();
     }
 
     public override async Task<ErrorOr<Deleted>> DeleteAsync(UnitOfMeasure unit, CancellationToken ct = default)

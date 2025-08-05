@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using ErrorOr;
+using System.Data.Common;
 
 namespace WarehouseManagement.Application;
 
@@ -8,7 +9,7 @@ public interface IUnitOfWork
 
     DbTransaction? DbTransaction { get; }
 
-    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
+    Task<Error?> CommitTransactionAsync(CancellationToken cancellationToken = default);
 
     Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
 

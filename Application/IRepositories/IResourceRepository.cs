@@ -5,6 +5,6 @@ namespace WarehouseManagement.Application.IRepositories;
 
 public interface IResourceRepository : IRepository<Resource> 
 {
-    Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default);
+    Task<ErrorOr<Updated>> ChangeStateAsync(Resource resource, CancellationToken ct = default);
     Task<Resource?> GetByName(string name, CancellationToken ct = default);
 }
