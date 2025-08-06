@@ -1,12 +1,13 @@
 ﻿using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseManagement.Application.IServices;
+using WarehouseManagement.Contracts;
 using WarehouseManagement.Contracts.UnitOfMeasure;
 
 namespace WarehouseManagement.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route(Routes.Units.Api)]
 public class UnitsController : ControllerBase
 {
     private readonly IUnitOfMeasureService _unitService;
@@ -17,14 +18,14 @@ public class UnitsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<UnitOfMeasureDto>>> GetAll(CancellationToken ct = default)
+    public async Task<ActionResult<List<UnitDto>>> GetAll(CancellationToken ct = default)
     {
         var units = await _unitService.GetAll(ct);
         return Ok(units);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<UnitOfMeasureDto>> GetById(int id, CancellationToken ct = default)
+    public async Task<ActionResult<UnitDto>> GetById(int id, CancellationToken ct = default)
     {
         var result = await _unitService.GetBy(id, ct);
 
@@ -38,7 +39,7 @@ public class UnitsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] UnitOfMeasureDto unit, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] UnitCreateDto unit, CancellationToken ct = default)
     {
         var result = await _unitService.CreateAsync(unit, ct);
 
@@ -51,11 +52,11 @@ public class UnitsController : ControllerBase
         if (result.IsError)
             return Problem(result.FirstError.Description);
 
-        return CreatedAtAction(nameof(GetById), new { id = unit.Id }, unit);
+        return Ok();
     }
 
-    [HttpPut]
-    public async Task<IActionResult> Update([FromBody] UnitOfMeasureDto unit, CancellationToken ct = default)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update([FromBody] UnitUpdateDto unit, CancellationToken ct = default)
     {
         var result = await _unitService.UpdateAsync(unit, ct);
 
@@ -91,7 +92,7 @@ public class UnitsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("{id:int}/state")]
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> ChangeState(int id, CancellationToken ct = default)
     {
         var result = await _unitService.ChangeStateAsync(id, ct);

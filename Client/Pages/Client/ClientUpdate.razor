@@ -1,0 +1,99 @@
+﻿@using WarehouseManagement.Contracts
+@using System.ComponentModel.DataAnnotations
+@using WarehouseManagement.Contracts.Client
+
+<div class="modal @(Show ? "d-block" : "d-none")" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование клиента</h5>
+                <button type="button" class="close" @onclick="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (Client == null)
+                {
+                    <p>Загрузка...</p>
+                }
+                else
+                {
+                    <EditForm Model="@Model" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="form-group">
+                            <label for="clientName">Наименование</label>
+                            <InputText id="clientName" @bind-Value="Model.Name" class="form-control" />
+                            <ValidationMessage For="@(() => Model.Name)" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="clientAdress">Адрес</label>
+                            <InputText id="clientAdress" @bind-Value="Model.Adress" class="form-control" />
+                            <ValidationMessage For="@(() => Model.Adress)" />
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                        </div>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Show { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ShowChanged { get; set; }
+
+    [Parameter]
+    public ClientUpdateDto? Client { get; set; }
+
+    [Parameter]
+    public EventCallback OnClientUpdated { get; set; }
+
+    [Inject]
+    public HttpClient Http { get; set; } = null!;
+
+    private ClientUpdateDto Model { get; set; } = new();
+
+    protected override void OnParametersSet()
+    {
+        if (Client != null)
+        {
+            Model = new ClientUpdateDto
+            {
+                Id = Client.Id,
+                Name = Client.Name,
+                Adress = Client.Adress,
+                State = Client.State
+            };
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (Client == null) return;
+
+        var response = await Http.PutAsJsonAsync(Routes.TransformUrl(Routes.Clients.Api, Client.Id), Model);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        await OnClientUpdated.InvokeAsync();
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        await ShowChanged.InvokeAsync(false);
+    }
+}

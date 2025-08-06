@@ -7,7 +7,11 @@ builder.Services
     .AddApplication()
     .AddDataBase(builder.Configuration);
 
+builder.Services.AddControllers();
+
 WebApplication app = builder.Build();
+
+app.MapControllers();
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();

@@ -40,7 +40,7 @@ public class WarehouseDbContext : DbContext, IUnitOfWork
 
             return default;
         }
-        catch(Exception ex)
+        catch
         {
             await RollbackTransactionAsync(cancellationToken);
 

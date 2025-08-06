@@ -18,6 +18,8 @@ public class CommonMappingRegister : IRegister
 
         config.NewConfig<ClientDto, Client>();
         config.NewConfig<Client, ClientDto>();
+        config.NewConfig<ClientCreateDto, Resource>();
+        config.NewConfig<ClientUpdateDto, Resource>();
 
         config.NewConfig<ReceiptDocumentDto, ReceiptDocument>();
         config.NewConfig<ReceiptDocument, ReceiptDocumentDto>();
@@ -35,8 +37,12 @@ public class CommonMappingRegister : IRegister
 
         config.NewConfig<ResourceDto, Resource>();
         config.NewConfig<Resource, ResourceDto>();
+        config.NewConfig<ResourceCreateDto, Resource>();
+        config.NewConfig<ResourceUpdateDto, Resource>();
 
-        config.NewConfig<UnitOfMeasureDto, UnitOfMeasure>();
-        config.NewConfig<UnitOfMeasure, UnitOfMeasureDto>();
+        config.NewConfig<UnitDto, UnitOfMeasure>();
+        config.NewConfig<UnitOfMeasure, UnitDto>();
+        config.NewConfig<UnitCreateDto, Resource>();
+        config.NewConfig<UnitUpdateDto, Resource>();
     }
 }

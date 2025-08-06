@@ -1,12 +1,14 @@
 ﻿using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseManagement.Application.IServices;
+using WarehouseManagement.Contracts;
 using WarehouseManagement.Contracts.Client;
+using WarehouseManagement.Contracts.Resource;
 
 namespace WarehouseManagement.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route(Routes.Clients.Api)]
 public class ClientsController : ControllerBase
 {
     private readonly IClientService _clientService;
@@ -38,7 +40,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ClientDto client, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] ClientCreateDto client, CancellationToken ct = default)
     {
         var result = await _clientService.CreateAsync(client, ct);
 
@@ -51,11 +53,11 @@ public class ClientsController : ControllerBase
         if (result.IsError)
             return Problem(result.FirstError.Description);
 
-        return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
+        return Ok();
     }
 
-    [HttpPut]
-    public async Task<IActionResult> Update([FromBody] ClientDto client, CancellationToken ct = default)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update([FromBody] ClientUpdateDto client, CancellationToken ct = default)
     {
         var result = await _clientService.UpdateAsync(client, ct);
 
@@ -88,7 +90,7 @@ public class ClientsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("{id:int}/state")]
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> ChangeState(int id, CancellationToken ct = default)
     {
         var result = await _clientService.ChangeStateAsync(id, ct);

@@ -1,0 +1,92 @@
+﻿@using WarehouseManagement.Contracts
+@using WarehouseManagement.Contracts.UnitOfMeasure
+@using System.ComponentModel.DataAnnotations
+
+<div class="modal @(Show ? "d-block" : "d-none")" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование единицы измерения</h5>
+                <button type="button" class="close" @onclick="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (Unit == null)
+                {
+                    <p>Загрузка...</p>
+                }
+                else
+                {
+                    <EditForm Model="@Model" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="form-group">
+                            <label for="unitName">Наименование</label>
+                            <InputText id="unitName" @bind-Value="Model.Name" class="form-control" />
+                            <ValidationMessage For="@(() => Model.Name)" />
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                        </div>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Show { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ShowChanged { get; set; }
+
+    [Parameter]
+    public UnitUpdateDto? Unit { get; set; }
+
+    [Parameter]
+    public EventCallback OnUnitUpdated { get; set; }
+
+    [Inject]
+    public HttpClient Http { get; set; } = null!;
+
+    private UnitUpdateDto Model { get; set; } = new();
+
+    protected override void OnParametersSet()
+    {
+        if (Unit != null)
+        {
+            Model = new UnitUpdateDto
+            {
+                Id = Unit.Id,
+                Name = Unit.Name,
+                State = Unit.State
+            };
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (Unit == null) return;
+
+        var response = await Http.PutAsJsonAsync(Routes.TransformUrl(Routes.Units.Api, Unit.Id), Model);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        await OnUnitUpdated.InvokeAsync();
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        await ShowChanged.InvokeAsync(false);
+    }
+}

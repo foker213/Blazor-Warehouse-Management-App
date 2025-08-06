@@ -7,7 +7,7 @@ using WarehouseManagement.Contracts.Shipment;
 namespace WarehouseManagement.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route(Routes.Shipments.Api)]
 public class ShipmentDocumentsController : ControllerBase
 {
     private readonly IShipmentDocumentService _shipmentDocumentService;

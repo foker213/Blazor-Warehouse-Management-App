@@ -1,0 +1,141 @@
+﻿@using WarehouseManagement.Contracts
+@using WarehouseManagement.Contracts.Client
+@using WarehouseManagement.Contracts.Enums
+
+@attribute [Route(Routes.Clients.Base)]
+
+@inject HttpClient Http
+
+<h3>Клиенты</h3>
+
+<div class="mb-3">
+    <button class="btn me-2 @(_currentState == State.InWork ? "btn-primary" : "btn-secondary")" @onclick="() => LoadClients(State.InWork)">В работе</button>
+    <button class="btn me-2 @(_currentState == State.InArchive ? "btn-primary" : "btn-secondary")" @onclick="() => LoadClients(State.InArchive)">Архив</button>
+    <button class="btn btn-success" @onclick="ShowCreateModal">Добавить</button>
+</div>
+
+@if (_clients == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Адрес</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var client in _clients)
+            {
+                <tr>
+                    <td>@client.Name</td>
+                    <td>@client.Adress</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(client.Id)">Редактировать</button>
+                        <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(client.Id)">@(_currentState == State.InWork ? "В архив" : "В работу")</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteClient(client.Id)">Удалить</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<ClientCreate Show="@_showCreateModal"
+                ShowChanged="@((bool value) => _showCreateModal = value)"
+                OnClientCreated="@RefreshClients" />
+
+<ClientUpdate 
+    Show="@_showEditModal" 
+    ShowChanged="@((bool value) => _showEditModal = value)" 
+    Client="@_selectedClient" 
+    OnClientUpdated="@RefreshClients" />
+
+@code {
+    private List<ClientDto>? _clients;
+    private State _currentState = State.InWork;
+    private bool _showCreateModal = false;
+    private bool _showEditModal = false;
+    private ClientUpdateDto? _selectedClient;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients(_currentState);
+    }
+
+    private async Task LoadClients(State state)
+    {
+        _currentState = state;
+        await RefreshClients();
+    }
+
+    private async Task RefreshClients()
+    {
+        HttpResponseMessage response = await Http.GetAsync(Routes.Clients.Api);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception("Ошибка при получении списка клиентов");
+        }
+
+        List<ClientDto>? allClients = await response.Content.ReadFromJsonAsync<List<ClientDto>>();
+
+        _clients = allClients?.Where(r => r.State == _currentState).ToList();
+    }
+
+    private void ShowCreateModal()
+    {
+        _showCreateModal = true;
+    }
+
+    private async Task ShowUpdateModal(int id)
+    {
+        HttpResponseMessage response = await Http.GetAsync(Routes.TransformUrl(Routes.Clients.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        ClientDto? client = await response.Content.ReadFromJsonAsync<ClientDto>();
+
+        _selectedClient = new()
+        {
+            Id = client!.Id,
+            Name = client.Name,
+            Adress = client.Adress,
+            State = client.State
+        };
+
+        _showEditModal = true;
+    }
+
+
+    private async Task ChangeState(int id)
+    {
+        HttpResponseMessage response = await Http.PatchAsync(Routes.TransformUrl(Routes.Clients.Api, id), null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        await LoadClients(_currentState);
+    }
+
+    private async Task DeleteClient(int id)
+    {
+        HttpResponseMessage response = await Http.DeleteAsync(Routes.TransformUrl(Routes.Clients.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        await LoadClients(_currentState);
+    }
+}

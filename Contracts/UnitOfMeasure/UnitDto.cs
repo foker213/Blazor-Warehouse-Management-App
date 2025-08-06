@@ -2,7 +2,7 @@
 
 namespace WarehouseManagement.Contracts.UnitOfMeasure;
 
-public class UnitOfMeasureDto
+public class UnitDto
 {
     public int Id { get; set; }
     public required string Name { get; set; }

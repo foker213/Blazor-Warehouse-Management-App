@@ -34,9 +34,9 @@ internal sealed class ResourceService : IResourceService
         return resource.Adapt<ResourceDto>();
     }
 
-    public async Task<ErrorOr<Created>> CreateAsync(ResourceDto resource, CancellationToken ct = default)
+    public async Task<ErrorOr<Created>> CreateAsync(ResourceCreateDto resource, CancellationToken ct = default)
     {
-        Error? error = await ValidateResource(resource, ct);
+        Error? error = await ValidateResource(resource.Name, ct);
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
@@ -48,9 +48,9 @@ internal sealed class ResourceService : IResourceService
         return result;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(ResourceDto resource, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> UpdateAsync(ResourceUpdateDto resource, CancellationToken ct = default)
     {
-        Error? error = await ValidateResource(resource, ct);
+        Error? error = await ValidateResource(resource.Name, ct);
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
@@ -94,14 +94,14 @@ internal sealed class ResourceService : IResourceService
         return await _resourceRepository.ChangeStateAsync(resource, ct);
     }
 
-    private async Task<Error?> ValidateResource(ResourceDto resource, CancellationToken ct)
+    private async Task<Error?> ValidateResource(string name, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(resource.Name))
+        if (string.IsNullOrWhiteSpace(name))
         {
             return Error.Validation("Name", "Поле наименования должно быть заполнено");
         }
 
-        Resource? response = await _resourceRepository.GetByName(resource.Name, ct);
+        Resource? response = await _resourceRepository.GetByName(name, ct);
 
         if (response is not null)
             return Error.Conflict("Name", "Ресурс с таким наименованием уже существует");

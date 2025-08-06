@@ -2,15 +2,49 @@
 
 public static class Routes
 {
-    public const string Balances = "/balances";
+    public static class Balances
+    {
+        public const string Base = "/balances";
+        public const string Api = "/api/balance";
 
-    public const string Receipts = "/receiptsDocument";
+        public static string GetById(int id) => $"{Api}/{id}";
+        public static string Create => Api;
+        public static string Update(int id) => $"{Api}/{id}";
+        public static string Delete(int id) => $"{Api}/{id}";
+    }
 
-    public const string Shipments = "/shipmentsDocument";
+    public static class Receipts
+    {
+        public const string Base = "/receiptsDocument";
+        public const string Api = "/api/receipts";
+    }
 
-    public const string Resources = "/resources";
+    public static class Shipments
+    {
+        public const string Base = "/shipmentsDocument";
+        public const string Api = "/api/shipments";
+    }
 
-    public const string Clients = "/clients";
+    public static class Resources
+    {
+        public const string Base = "/resources";
+        public const string Api = "/api/resources";
+    }
 
-    public const string Units = "/unitsOfWork";
+    public static class Clients
+    {
+        public const string Base = "/clients";
+        public const string Api = "/api/clients";
+    }
+
+    public static class Units
+    {
+        public const string Base = "/units";
+        public const string Api = "/api/units";
+    }
+
+    public static string TransformUrl(string route, int id)
+    {
+        return route + "/" + id;
+    }
 }

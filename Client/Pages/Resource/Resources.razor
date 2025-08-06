@@ -1,0 +1,135 @@
+﻿@using WarehouseManagement.Contracts
+@using WarehouseManagement.Contracts.Enums
+@using WarehouseManagement.Contracts.Resource
+@attribute [Route(Routes.Resources.Base)]
+
+@inject HttpClient Http
+
+<h3>Ресурсы</h3>
+
+<div class="mb-3">
+    <button class="btn me-2 @(currentState == State.InWork ? "btn-primary" : "btn-secondary")" @onclick="() => LoadResources(State.InWork)">В работе</button>
+    <button class="btn me-2 @(currentState == State.InArchive ? "btn-primary" : "btn-secondary")" @onclick="() => LoadResources(State.InArchive)">Архив</button>
+    <button class="btn btn-success" @onclick="ShowCreateModal">Добавить</button>
+</div>
+
+@if (resources == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var resource in resources)
+            {
+                <tr>
+                    <td>@resource.Name</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(resource.Id)">Редактировать</button>
+                        <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(resource.Id)">@(currentState == State.InWork ? "В архив" : "В работу")</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteResource(resource.Id)">Удалить</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<ResourceCreate Show="@showCreateModal"
+                ShowChanged="@((bool value) => showCreateModal = value)"
+                OnResourceCreated="@RefreshResources" />
+
+<ResourceUpdate 
+    Show="@showEditModal" 
+    ShowChanged="@((bool value) => showEditModal = value)" 
+    Resource="@selectedResource" 
+    OnResourceUpdated="@RefreshResources" />
+
+@code {
+    private List<ResourceDto>? resources;
+    private State currentState = State.InWork;
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
+    private ResourceUpdateDto? selectedResource;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadResources(currentState);
+    }
+
+    private async Task LoadResources(State state)
+    {
+        currentState = state;
+        await RefreshResources();
+    }
+
+    private async Task RefreshResources()
+    {
+        HttpResponseMessage response = await Http.GetAsync(Routes.Resources.Api);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception("Ошибка при получении списка ресурсов");
+        }
+
+        List<ResourceDto>? allResources = await response.Content.ReadFromJsonAsync<List<ResourceDto>>();
+
+        resources = allResources?.Where(r => r.State == currentState).ToList();
+    }
+
+    private void ShowCreateModal()
+    {
+        showCreateModal = true;
+    }
+
+    private async Task ShowUpdateModal(int id)
+    {
+        HttpResponseMessage response = await Http.GetAsync(Routes.TransformUrl(Routes.Resources.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        ResourceDto? resource = await response.Content.ReadFromJsonAsync<ResourceDto>();
+
+        selectedResource = new() { 
+            Id = resource!.Id,
+            Name = resource.Name,
+            State = resource.State
+        };
+        showEditModal = true;
+    }
+
+
+    private async Task ChangeState(int id)
+    {
+        HttpResponseMessage response = await Http.PatchAsync(Routes.TransformUrl(Routes.Resources.Api, id), null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        await LoadResources(currentState);
+    }
+
+    private async Task DeleteResource(int id)
+    {
+        HttpResponseMessage response = await Http.DeleteAsync(Routes.TransformUrl(Routes.Resources.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await response.Content.ReadAsStringAsync());
+        }
+
+        await LoadResources(currentState);
+    }
+}

@@ -6,7 +6,7 @@ using WarehouseManagement.Contracts.Balance;
 namespace WarehouseManagement.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route(Routes.Balances.Api)]
 public class BalancesController : ControllerBase
 {
     private readonly IBalanceService _balanceService;

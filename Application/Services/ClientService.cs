@@ -34,9 +34,9 @@ internal sealed class ClientService : IClientService
         return client.Adapt<ClientDto>();
     }
 
-    public async Task<ErrorOr<Created>> CreateAsync(ClientDto client, CancellationToken ct = default)
+    public async Task<ErrorOr<Created>> CreateAsync(ClientCreateDto client, CancellationToken ct = default)
     {
-        Error? error = await ValidateClient(client, ct);
+        Error? error = await ValidateClient(client.Name, ct);
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
@@ -48,9 +48,9 @@ internal sealed class ClientService : IClientService
         return result;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(ClientDto client, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> UpdateAsync(ClientUpdateDto client, CancellationToken ct = default)
     {
-        Error? error = await ValidateClient(client, ct);
+        Error? error = await ValidateClient(client.Name, ct);
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
@@ -94,14 +94,14 @@ internal sealed class ClientService : IClientService
         return await _clientRepository.ChangeStateAsync(resource, ct);
     }
 
-    private async Task<Error?> ValidateClient(ClientDto client, CancellationToken ct)
+    private async Task<Error?> ValidateClient(string name, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(client.Name))
+        if (string.IsNullOrWhiteSpace(name))
         {
             return Error.Validation("Name", "Поле наименования должно быть заполнено");
         }
 
-        Client? response = await _clientRepository.GetByName(client.Name, ct);
+        Client? response = await _clientRepository.GetByName(name, ct);
 
         if (response is not null)
             return Error.Conflict("Name", "Клиент с таким наименованием уже существует");

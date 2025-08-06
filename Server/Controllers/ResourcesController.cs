@@ -1,12 +1,14 @@
 ﻿using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseManagement.Application.IServices;
+using WarehouseManagement.Contracts;
+using WarehouseManagement.Contracts.Client;
 using WarehouseManagement.Contracts.Resource;
 
 namespace WarehouseManagement.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route(Routes.Resources.Api)]
 public class ResourcesController : ControllerBase
 {
     private readonly IResourceService _resourceService;
@@ -19,14 +21,14 @@ public class ResourcesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<ResourceDto>>> GetAll(CancellationToken ct = default)
     {
-        var resources = await _resourceService.GetAll(ct);
+        List<ResourceDto> resources = await _resourceService.GetAll(ct);
         return Ok(resources);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ResourceDto>> GetById(int id, CancellationToken ct = default)
     {
-        var result = await _resourceService.GetBy(id, ct);
+        ErrorOr<ResourceDto> result = await _resourceService.GetBy(id, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
             return NotFound();
@@ -38,9 +40,9 @@ public class ResourcesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(ResourceDto resource, CancellationToken ct = default)
+    public async Task<IActionResult> Create(ResourceCreateDto resource, CancellationToken ct = default)
     {
-        var result = await _resourceService.CreateAsync(resource, ct);
+        ErrorOr<Created> result = await _resourceService.CreateAsync(resource, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.Validation)
             return BadRequest(result.FirstError.Description);
@@ -51,13 +53,13 @@ public class ResourcesController : ControllerBase
         if (result.IsError)
             return Problem(result.FirstError.Description);
 
-        return CreatedAtAction(nameof(GetById), new { id = resource.Id }, resource);
+        return Ok();
     }
 
-    [HttpPut]
-    public async Task<IActionResult> Update(ResourceDto resource, CancellationToken ct = default)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(ResourceUpdateDto resource, CancellationToken ct = default)
     {
-        var result = await _resourceService.UpdateAsync(resource, ct);
+        ErrorOr<Updated> result = await _resourceService.UpdateAsync(resource, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.Validation)
             return BadRequest(result.FirstError.Description);
@@ -74,7 +76,7 @@ public class ResourcesController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct = default)
     {
-        var result = await _resourceService.DeleteAsync(id, ct);
+        ErrorOr<Deleted> result = await _resourceService.DeleteAsync(id, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
             return NotFound();
@@ -88,10 +90,10 @@ public class ResourcesController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("{id:int}/state")]
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> ChangeState(int id, CancellationToken ct = default)
     {
-        var result = await _resourceService.ChangeStateAsync(id, ct);
+        ErrorOr<Updated> result = await _resourceService.ChangeStateAsync(id, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
             return NotFound();

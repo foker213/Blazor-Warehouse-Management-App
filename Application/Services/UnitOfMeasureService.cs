@@ -16,26 +16,26 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
     {
         _unitOfMeasureRepository = unitOfMeasureRepository;
     }
-    public async Task<List<UnitOfMeasureDto>> GetAll(CancellationToken ct = default)
+    public async Task<List<UnitDto>> GetAll(CancellationToken ct = default)
     {
         List<UnitOfMeasure> items = await _unitOfMeasureRepository.GetAll(ct);
 
-        return items.Adapt<List<UnitOfMeasureDto>>();
+        return items.Adapt<List<UnitDto>>();
     }
 
-    public async Task<ErrorOr<UnitOfMeasureDto>> GetBy(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<UnitDto>> GetBy(int id, CancellationToken ct = default)
     {
         UnitOfMeasure? unit = await _unitOfMeasureRepository.GetBy(id, ct);
 
         if (unit is null)
-            return ErrorOr<UnitOfMeasureDto>.From(new List<Error> { Error.NotFound() });
+            return ErrorOr<UnitDto>.From(new List<Error> { Error.NotFound() });
 
-        return unit.Adapt<UnitOfMeasureDto>();
+        return unit.Adapt<UnitDto>();
     }
 
-    public async Task<ErrorOr<Created>> CreateAsync(UnitOfMeasureDto unit, CancellationToken ct = default)
+    public async Task<ErrorOr<Created>> CreateAsync(UnitCreateDto unit, CancellationToken ct = default)
     {
-        Error? error = await ValidateUnit(unit, ct);
+        Error? error = await ValidateUnit(unit.Name, ct);
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
@@ -47,9 +47,9 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
         return result;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(UnitOfMeasureDto unit, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> UpdateAsync(UnitUpdateDto unit, CancellationToken ct = default)
     {
-        Error? error = await ValidateUnit(unit, ct);
+        Error? error = await ValidateUnit(unit.Name, ct);
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
@@ -93,14 +93,14 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
         return await _unitOfMeasureRepository.ChangeStateAsync(resource, ct);
     }
 
-    private async Task<Error?> ValidateUnit(UnitOfMeasureDto unit, CancellationToken ct)
+    private async Task<Error?> ValidateUnit(string name, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(unit.Name))
+        if (string.IsNullOrWhiteSpace(name))
         {
             return Error.Validation("Name", "Поле наименования должно быть заполнено");
         }
 
-        UnitOfMeasure? response = await _unitOfMeasureRepository.GetByName(unit.Name, ct);
+        UnitOfMeasure? response = await _unitOfMeasureRepository.GetByName(name, ct);
 
         if (response is not null)
             return Error.Conflict("Name", "Единица измерения с таким наименованием уже существует");

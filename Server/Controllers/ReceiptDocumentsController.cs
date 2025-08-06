@@ -7,7 +7,7 @@ using WarehouseManagement.Contracts.Receipt;
 namespace WarehouseManagement.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route(Routes.Receipts.Api)]
 public class ReceiptDocumentsController : ControllerBase
 {
     private readonly IReceiptDocumentService _receiptDocumentService;
