@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IBalanceRepository, BalanceRepository>();
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IReceiptDocumentRepository, ReceiptDocumentRepository>();
+        services.AddScoped<IReceiptResourceRepository, ReceiptResourceRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<IShipmentDocumentRepository, ShipmentDocumentRepository>();
         services.AddScoped<IUnitOfMeasureRepository, UnitOfMeasureRepository>();

@@ -1,4 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿@using WarehouseManagement.Contracts
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -10,3 +13,14 @@
         </article>
     </main>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (NavigationManager.Uri.EndsWith(NavigationManager.BaseUri))
+        {
+            NavigationManager.NavigateTo(Routes.Balances);
+        }
+        base.OnInitialized();
+    }
+}

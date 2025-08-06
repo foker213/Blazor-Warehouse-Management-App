@@ -4,11 +4,11 @@ using WarehouseManagement.Domain.Models;
 
 namespace WarehouseManagement.DataBase.Repositories;
 
-internal sealed class ResourceDocumentRepository : IReceiptResourceRepository
+internal sealed class ReceiptResourceRepository : IReceiptResourceRepository
 {
     private readonly WarehouseDbContext _db;
 
-    public ResourceDocumentRepository(WarehouseDbContext db)
+    public ReceiptResourceRepository(WarehouseDbContext db)
     {
         _db = db;
     }
