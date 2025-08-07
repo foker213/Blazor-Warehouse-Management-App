@@ -1,9 +1,8 @@
-﻿@using WarehouseManagement.Contracts
-@using WarehouseManagement.Contracts.Enums
-@using WarehouseManagement.Contracts.Resource
-@attribute [Route(Routes.Resources.Base)]
+﻿@attribute [Route(Routes.Resources.Base)]
 
 @inject HttpClient Http
+
+<Notification @ref="_notification" />
 
 <h3>Ресурсы</h3>
 
@@ -58,6 +57,7 @@ else
     private bool showCreateModal = false;
     private bool showEditModal = false;
     private ResourceUpdateDto? selectedResource;
+    private Notification? _notification;
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,7 +76,8 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception("Ошибка при получении списка ресурсов");
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         List<ResourceDto>? allResources = await response.Content.ReadFromJsonAsync<List<ResourceDto>>();
@@ -95,7 +96,8 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         ResourceDto? resource = await response.Content.ReadFromJsonAsync<ResourceDto>();
@@ -115,10 +117,13 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         await LoadResources(currentState);
+
+        _notification?.Show("Успешно!", false);
     }
 
     private async Task DeleteResource(int id)
@@ -127,9 +132,12 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         await LoadResources(currentState);
+
+        _notification?.Show("Ресурс успешно удален!", false);
     }
 }

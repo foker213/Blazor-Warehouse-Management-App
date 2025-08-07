@@ -11,17 +11,17 @@ internal sealed class ReceiptsDocument
             new ReceiptDocument
             {
                 Number = "Новая поставка №1",
-                Date = DateTime.Now
+                Date = DateOnly.FromDateTime(DateTime.Now)
             },
             new ReceiptDocument
             {
                 Number = "Новая поставка №2",
-                Date = DateTime.Now
+                Date = DateOnly.FromDateTime(DateTime.Now)
             },
             new ReceiptDocument
             {
                 Number = "Новая поставка №3",
-                Date = DateTime.Now
+                Date = DateOnly.FromDateTime(DateTime.Now)
             }
         };
     }

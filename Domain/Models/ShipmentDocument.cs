@@ -18,7 +18,7 @@ public class ShipmentDocument : Entity
     /// <summary>
     /// Дата поступления
     /// </summary>
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 
     /// <summary>
     /// Статус подписания

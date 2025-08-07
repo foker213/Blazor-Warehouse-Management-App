@@ -37,6 +37,8 @@ public sealed class Seeder
                 db.Add(el);
         }
 
+        await db.SaveChangesAsync();
+
         if (!db.Set<Balance>().Any())
         {
             logger.LogInformation("Seeding balances...");
@@ -53,6 +55,8 @@ public sealed class Seeder
                 db.Add(el);
         }
 
+        await db.SaveChangesAsync();
+
         if (!db.Set<ReceiptResource>().Any())
         {
             logger.LogInformation("Seeding receipts resource...");
@@ -68,6 +72,8 @@ public sealed class Seeder
             foreach (var el in ShipmentsDocument.Get())
                 db.Add(el);
         }
+
+        await db.SaveChangesAsync();
 
         if (!db.Set<ShipmentResource>().Any())
         {

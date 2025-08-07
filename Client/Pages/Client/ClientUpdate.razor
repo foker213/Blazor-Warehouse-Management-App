@@ -1,13 +1,11 @@
-﻿@using WarehouseManagement.Contracts
-@using System.ComponentModel.DataAnnotations
-@using WarehouseManagement.Contracts.Client
+﻿<Notification @ref="_notification" />
 
 <div class="modal @(Show ? "d-block" : "d-none")" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header" style="display: flex; justify-content: space-between">
                 <h5 class="modal-title">Редактирование клиента</h5>
-                <button type="button" class="close" @onclick="Close">
+                <button type="button" class="close" style="background: white; border: 0;" @onclick="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -62,6 +60,7 @@
     public HttpClient Http { get; set; } = null!;
 
     private ClientUpdateDto Model { get; set; } = new();
+    private Notification? _notification;
 
     protected override void OnParametersSet()
     {
@@ -85,10 +84,13 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         await OnClientUpdated.InvokeAsync();
+        _notification?.Show("Клиент был успешно обновлен!", false);
+
         await Close();
     }
 

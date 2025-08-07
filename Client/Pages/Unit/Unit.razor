@@ -6,6 +6,8 @@
 
 @inject HttpClient Http
 
+<Notification @ref="_notification" />
+
 <h3>Единицы измерения</h3>
 
 <div class="mb-3">
@@ -59,6 +61,7 @@ else
     private bool showCreateModal = false;
     private bool showEditModal = false;
     private UnitUpdateDto? selectedUnit;
+    private Notification? _notification;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,7 +80,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception("Ошибка при получении списка единиц измерения");
+            _notification?.Show(await response.Content.ReadAsStringAsync());
         }
 
         List<UnitDto>? allUnits = await response.Content.ReadFromJsonAsync<List<UnitDto>>();
@@ -96,7 +99,8 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         UnitDto? unit = await response.Content.ReadFromJsonAsync<UnitDto>();
@@ -116,8 +120,11 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
+
+        _notification?.Show("Успешно!", false);
 
         await LoadUnits(currentState);
     }
@@ -128,8 +135,11 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
+
+        _notification?.Show("Единица измерения была успешно удалена!", false);
 
         await LoadUnits(currentState);
     }

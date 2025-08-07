@@ -7,6 +7,14 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class UnitOfMeasureRepository(WarehouseDbContext db) : Repository<UnitOfMeasure>(db), IUnitOfMeasureRepository
 {
+    protected override IQueryable<UnitOfMeasure> GetQuery()
+    {
+#nullable disable
+        return DbSet.AsNoTracking()
+            .Include(x => x.ReceiptResource)
+            .Include(x => x.ShipmentResource);
+#nullable restore
+    }
     public async Task<ErrorOr<Updated>> ChangeStateAsync(UnitOfMeasure unit, CancellationToken ct = default)
     {
         DbSet.Entry(unit).Property(x => x.State).IsModified = true;

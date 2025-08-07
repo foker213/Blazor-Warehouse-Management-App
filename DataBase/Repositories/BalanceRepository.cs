@@ -9,6 +9,13 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
     Repository<Balance>(db),
     IBalanceRepository
 {
+    protected override IQueryable<Balance> GetQuery()
+    {
+        return DbSet.AsNoTracking()
+            .Include(x => x.UnitOfMeasure)
+            .Include(x => x.Resource);
+    }
+
     public async Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
         IQueryable<Balance> query = GetQuery();

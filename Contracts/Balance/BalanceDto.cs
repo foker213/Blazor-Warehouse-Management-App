@@ -7,5 +7,6 @@ public class BalanceDto
 {
     public int Id { get; set; }
     public required ResourceDto Resource { get; set; }
-    public required UnitDto Unit { get; set; }
+    public required UnitDto UnitOfMeasure { get; set; }
+    public int Quantity { get; set; }
 }

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using WarehouseManagement.Application.IServices;
 using WarehouseManagement.Contracts;
-using WarehouseManagement.Contracts.Client;
 using WarehouseManagement.Contracts.Resource;
 
 namespace WarehouseManagement.Server.Controllers;

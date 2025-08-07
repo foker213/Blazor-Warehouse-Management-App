@@ -1,13 +1,11 @@
-﻿@using System.ComponentModel.DataAnnotations
-@using WarehouseManagement.Contracts
-@using WarehouseManagement.Contracts.Client
+﻿<Notification @ref="_notification" />
 
 <div class="modal @(Show ? "d-block" : "d-none")" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header" style="display: flex; justify-content: space-between">
                 <h5 class="modal-title">Добавление клиента</h5>
-                <button type="button" class="close" @onclick="Close">
+                <button type="button" class="close" style="background: white; border: 0;" @onclick="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -52,6 +50,7 @@
     public HttpClient Http { get; set; } = null!;
 
     private ClientCreateDto Model { get; set; } = new();
+    private Notification? _notification;
 
     private async Task HandleSubmit()
     {
@@ -59,11 +58,15 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         Model = new();
         await OnClientCreated.InvokeAsync();
+
+        _notification?.Show("Клиент был успешно создан!", false);
+
         await Close();
     }
 

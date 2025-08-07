@@ -12,8 +12,8 @@ using WarehouseManagement.DataBase;
 namespace WarehouseManagement.DataBase.Migrations
 {
     [DbContext(typeof(WarehouseDbContext))]
-    [Migration("20250807090152_Warehouse")]
-    partial class Warehouse
+    [Migration("20250807125058_Warhouse")]
+    partial class Warhouse
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -85,8 +85,8 @@ namespace WarehouseManagement.DataBase.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
 
                     b.Property<string>("Number")
                         .IsRequired()
@@ -161,8 +161,8 @@ namespace WarehouseManagement.DataBase.Migrations
                     b.Property<int>("ClientId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
 
                     b.Property<string>("Number")
                         .IsRequired()

@@ -2,8 +2,125 @@
 
 @attribute [Route(Routes.Balances.Base)]
 
-<h3>Balance</h3>
+@inject HttpClient Http
+
+<Notification @ref="_notification" />
+
+<h3>Баланс</h3>
+
+<div class="mb-3">
+    <div class="row">
+        <div class="col-md-4">
+            <label>Фильтр по ресурсу</label>
+            <select class="form-select" @bind="selectedResourceFilter">
+                <option value="">Все ресурсы</option>
+                @foreach (var resource in availableResources)
+                {
+                    <option value="@resource">@resource</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label>Фильтр по единице измерения</label>
+            <select class="form-select" @bind="selectedUnitFilter">
+                <option value="">Все единицы</option>
+                @foreach (var unit in availableUnits)
+                {
+                    <option value="@unit">@unit</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-primary" @onclick="RefreshBalance">Обновить</button>
+        </div>
+    </div>
+</div>
+
+@if (balanceItems == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Ресурс</th>
+                <th>Единица измерения</th>
+                <th>Количество</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in filteredBalanceItems)
+            {
+                <tr>
+                    <td>@item.Resource.Name</td>
+                    <td>@item.UnitOfMeasure.Name</td>
+                    <td>@item.Quantity</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
+    private List<BalanceDto>? balanceItems;
+    private List<BalanceDto> filteredBalanceItems = new();
+    private Notification? _notification;
 
+    private string selectedResourceFilter = "";
+    private string selectedUnitFilter = "";
+    private List<string> availableResources = new();
+    private List<string> availableUnits = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBalance();
+    }
+
+    private async Task LoadBalance()
+    {
+        var response = await Http.GetAsync(Routes.Balances.Api);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        balanceItems = await response.Content.ReadFromJsonAsync<List<BalanceDto>>();
+
+        if (balanceItems != null)
+        {
+            availableResources = balanceItems.Select(x => x.Resource.Name).Distinct().ToList();
+            availableUnits = balanceItems.Select(x => x.UnitOfMeasure.Name).Distinct().ToList();
+
+            ApplyFilters();
+        }
+    }
+
+    private async Task RefreshBalance()
+    {
+        await LoadBalance();
+        _notification?.Show("Данные обновлены", false);
+    }
+
+    private void ApplyFilters()
+    {
+        if (balanceItems == null) return;
+
+        var query = balanceItems.AsQueryable();
+
+        if (!string.IsNullOrEmpty(selectedResourceFilter))
+        {
+            query = query.Where(x => x.Resource.Name == selectedResourceFilter);
+        }
+
+        if (!string.IsNullOrEmpty(selectedUnitFilter))
+        {
+            query = query.Where(x => x.UnitOfMeasure.Name == selectedUnitFilter);
+        }
+
+        filteredBalanceItems = query.ToList();
+    }
 }

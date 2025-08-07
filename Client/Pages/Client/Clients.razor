@@ -1,10 +1,8 @@
-﻿@using WarehouseManagement.Contracts
-@using WarehouseManagement.Contracts.Client
-@using WarehouseManagement.Contracts.Enums
-
-@attribute [Route(Routes.Clients.Base)]
+﻿@attribute [Route(Routes.Clients.Base)]
 
 @inject HttpClient Http
+
+<Notification @ref="_notification" />
 
 <h3>Клиенты</h3>
 
@@ -61,6 +59,7 @@ else
     private bool _showCreateModal = false;
     private bool _showEditModal = false;
     private ClientUpdateDto? _selectedClient;
+    private Notification? _notification;
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,7 +78,8 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception("Ошибка при получении списка клиентов");
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         List<ClientDto>? allClients = await response.Content.ReadFromJsonAsync<List<ClientDto>>();
@@ -98,7 +98,8 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
         ClientDto? client = await response.Content.ReadFromJsonAsync<ClientDto>();
@@ -121,9 +122,11 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
+        _notification?.Show("Успешно!", false);
         await LoadClients(_currentState);
     }
 
@@ -133,9 +136,11 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(await response.Content.ReadAsStringAsync());
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
         }
 
+        _notification?.Show("Клиент был успешно удален!", false);
         await LoadClients(_currentState);
     }
 }

@@ -36,7 +36,7 @@ internal sealed class ClientService : IClientService
 
     public async Task<ErrorOr<Created>> CreateAsync(ClientCreateDto client, CancellationToken ct = default)
     {
-        Error? error = await ValidateClient(client.Name, ct);
+        Error? error = await ValidateClient(client.Name);
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
@@ -50,7 +50,7 @@ internal sealed class ClientService : IClientService
 
     public async Task<ErrorOr<Updated>> UpdateAsync(ClientUpdateDto client, CancellationToken ct = default)
     {
-        Error? error = await ValidateClient(client.Name, ct);
+        Error? error = await ValidateClient(client.Name, client.Id, ct);
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
@@ -94,7 +94,7 @@ internal sealed class ClientService : IClientService
         return await _clientRepository.ChangeStateAsync(resource, ct);
     }
 
-    private async Task<Error?> ValidateClient(string name, CancellationToken ct)
+    private async Task<Error?> ValidateClient(string name, int id = 0, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -103,7 +103,7 @@ internal sealed class ClientService : IClientService
 
         Client? response = await _clientRepository.GetByName(name, ct);
 
-        if (response is not null)
+        if (response is not null && response.Id != id)
             return Error.Conflict("Name", "Клиент с таким наименованием уже существует");
 
         return default;

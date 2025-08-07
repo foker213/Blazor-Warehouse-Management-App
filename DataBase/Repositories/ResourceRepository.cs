@@ -7,6 +7,13 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class ResourceRepository(WarehouseDbContext db) : Repository<Resource>(db), IResourceRepository
 {
+    protected override IQueryable<Resource> GetQuery()
+    {
+        return DbSet.AsNoTracking()
+            .Include(x => x.ReceiptResource)
+            .Include(x => x.ShipmentResource);
+    }
+
     public async Task<ErrorOr<Updated>> ChangeStateAsync(Resource resource, CancellationToken ct = default)
     {
         DbSet.Entry(resource).Property(x => x.State).IsModified = true;

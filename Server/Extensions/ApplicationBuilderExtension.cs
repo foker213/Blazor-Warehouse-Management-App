@@ -13,7 +13,7 @@ public static class ApplicationBuilderExtension
         using var db = sp.GetRequiredService<WarehouseDbContext>();
         db.Database.Migrate();
 
-        Seeder.Seed(db, sp);
+        await Seeder.Seed(db, sp);
 
         return app;
     }

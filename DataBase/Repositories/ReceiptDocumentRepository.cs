@@ -9,6 +9,17 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
     Repository<ReceiptDocument>(db),
     IReceiptDocumentRepository
 {
+    protected override IQueryable<ReceiptDocument> GetQuery()
+    {
+#nullable disable
+        return DbSet.AsNoTracking()
+            .Include(x => x.ReceiptResources)
+                .ThenInclude(x => x.Resource)
+            .Include(x => x.ReceiptResources)
+                .ThenInclude(x => x.UnitOfMeasure);
+#nullable restore
+    }
+
     public async Task<List<ReceiptDocument>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
         IQueryable<ReceiptDocument> query = GetQuery();
@@ -20,7 +31,7 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
 
         query = query.Where(x => x.Date >= filter.DateStart!.Value);
 
-        DateTime endDate = filter.DateEnd!.Value.AddDays(1);
+        DateOnly endDate = filter.DateEnd!.Value.AddDays(1);
         query = query.Where(x => x.Date < endDate);
 
         query = query.Where(x => x.ReceiptResources != null && x.ReceiptResources.Any());

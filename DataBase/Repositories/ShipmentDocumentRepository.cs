@@ -10,6 +10,15 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
     Repository<ShipmentDocument>(db),
     IShipmentDocumentRepository
 {
+    protected override IQueryable<ShipmentDocument> GetQuery()
+    {
+        return DbSet.AsNoTracking()
+            .Include(x => x.ShipmentResources)
+                .ThenInclude(x => x.Resource)
+            .Include(x => x.ShipmentResources)
+                .ThenInclude(x => x.UnitOfMeasure);
+    }
+
     public Task<ErrorOr<Updated>> ChangeStatusAsync(int id, CancellationToken ct = default)
     {
         throw new NotImplementedException();

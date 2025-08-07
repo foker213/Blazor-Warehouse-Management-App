@@ -112,3 +112,58 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.notification {
+    min-width: 300px;
+    max-width: 400px;
+    animation: notification-fadein 0.3s;
+}
+
+    .notification.error {
+        border-left: 4px solid #dc3545;
+    }
+
+    .notification.success {
+        border-left: 4px solid #28a745;
+    }
+
+.notification-icon {
+    font-size: 1.25rem;
+}
+
+    .notification-icon.error {
+        color: #dc3545;
+    }
+
+    .notification-icon.success {
+        color: #28a745;
+    }
+
+@keyframes notification-fadein {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.fade-out {
+    animation: notification-fadeout 0.3s;
+    opacity: 0;
+}
+
+@keyframes notification-fadeout {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+}
