@@ -8,10 +8,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Folder Include="Seeds\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
 	    <PrivateAssets>all</PrivateAssets>

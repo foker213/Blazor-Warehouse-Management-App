@@ -47,96 +47,105 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
     public async Task<ErrorOr<Created>> CreateAsync(ReceiptDocumentDto receipt, CancellationToken ct = default)
     {
-        using (await _syncService.AcquireLockAsync())
+        Error? error = await ValidateReceipt(receipt, ct);
+        if (error is not null)
+            return error.Value;
+
+        if (!receipt.HasResources())
         {
-            Error? error = await ValidateReceipt(receipt, ct);
-            if (error is not null)
-                return error.Value;
-
-            if (!receipt.HasResources())
-            {
-                return await _documentRepository.CreateAsync(receipt.Adapt<ReceiptDocument>(), ct);
-            }
-
-            await using DbTransaction transaction = await _unitOfWork.BeginTransactionAsync(ct);
-
-            _documentRepository.Add(receipt.Adapt<ReceiptDocument>());
-
-            List<ReceiptResourceDto> updatedResources = receipt.ReceiptResources!.Where(x => x.Quantity > 0).ToList();
-
-            await _balanceService.UpdateBalances(updatedResources, ct);
-
-            Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
-            if (errorWhenSave is not null)
-                return errorWhenSave.Value;
-
-            return new Created();
+            return await _documentRepository.CreateAsync(receipt.Adapt<ReceiptDocument>(), ct);
         }
+
+        List<IDisposable> locks = await GetInLineAsync(receipt.ReceiptResources);
+
+        await using DbTransaction transaction = await _unitOfWork.BeginTransactionAsync(ct);
+
+        _documentRepository.Add(receipt.Adapt<ReceiptDocument>());
+
+        List<ReceiptResourceDto> updatedResources = receipt.ReceiptResources!.Where(x => x.Quantity > 0).ToList();
+
+        await _balanceService.UpdateBalances(updatedResources, ct);
+
+        Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
+
+        foreach (IDisposable currentLock in locks)
+            currentLock.Dispose();
+
+        if (errorWhenSave is not null)
+            return errorWhenSave.Value;
+
+        return new Created();
     }
 
     public async Task<ErrorOr<Updated>> UpdateAsync(ReceiptDocumentDto receipt, CancellationToken ct = default)
     {
-        using (await _syncService.AcquireLockAsync())
-        {
-            Error? error = await ValidateReceipt(receipt, ct);
-            if (error is not null && error.Value.Code != "NumberExist")
-                return error.Value;
+        Error? error = await ValidateReceipt(receipt, ct);
+        if (error is not null && error.Value.Code != "NumberExist")
+            return error.Value;
 
-            ReceiptDocument? existingDocument = await _documentRepository.GetBy(receipt.Id, ct);
-            if (existingDocument is null)
-                return Error.NotFound("DocumentNotFound", "Документ не найден");
+        ReceiptDocument? existingDocument = await _documentRepository.GetBy(receipt.Id, ct);
+        if (existingDocument is null)
+            return Error.NotFound("DocumentNotFound", "Документ не найден");
 
-            await using DbTransaction transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        List<IDisposable> locks = await GetInLineAsync(receipt.ReceiptResources);
 
-            List<ReceiptResource> oldResources = existingDocument.ReceiptResources?.ToList() ?? new List<ReceiptResource>();
-            List<ReceiptResourceDto> newResources = receipt.ReceiptResources?.ToList() ?? new List<ReceiptResourceDto>();
+        await using DbTransaction transaction = await _unitOfWork.BeginTransactionAsync(ct);
 
-            ErrorOr<Success> removedResourcesResult = await _balanceService.HandleRemovedResourcesAsync(
-                oldResources, newResources, ct);
+        List<ReceiptResource> oldResources = existingDocument.ReceiptResources?.ToList() ?? new List<ReceiptResource>();
+        List<ReceiptResourceDto> newResources = receipt.ReceiptResources?.ToList() ?? new List<ReceiptResourceDto>();
 
-            if (removedResourcesResult.IsError)
-                return removedResourcesResult.FirstError;
+        ErrorOr<Success> removedResourcesResult = await _balanceService.HandleRemovedResourcesAsync(
+            oldResources, newResources, ct);
 
-            _documentRepository.Update(receipt.Adapt<ReceiptDocument>());
+        if (removedResourcesResult.IsError)
+            return removedResourcesResult.FirstError;
 
-            newResources = newResources.Where(x => x.Quantity > 0).ToList();
+        _documentRepository.Update(receipt.Adapt<ReceiptDocument>());
 
-            if (newResources.Any())
-                await _balanceService.UpdateBalances(newResources, ct);
+        newResources = newResources.Where(x => x.Quantity > 0).ToList();
 
-            Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
-            if (errorWhenSave is not null)
-                return errorWhenSave.Value;
+        if (newResources.Any())
+            await _balanceService.UpdateBalances(newResources, ct);
 
-            return new Updated();
-        }
+        Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
+
+        foreach (IDisposable currentLock in locks)
+            currentLock.Dispose();
+
+        if (errorWhenSave is not null)
+            return errorWhenSave.Value;
+
+        return new Updated();
     }
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct)
     {
-        using (await _syncService.AcquireLockAsync())
+        ReceiptDocument? document = await _documentRepository.GetBy(id, ct);
+        if (document is null)
+            return Error.NotFound("DocumentNotFound", "Документ не найден");
+
+        if (document.ReceiptResources is null || document.ReceiptResources.Count == 0)
         {
-            ReceiptDocument? document = await _documentRepository.GetBy(id, ct);
-            if (document is null)
-                return Error.NotFound("DocumentNotFound", "Документ не найден");
-
-            if (document.ReceiptResources is null || document.ReceiptResources.Count == 0)
-            {
-                return await _documentRepository.DeleteAsync(document, ct);
-            }
-
-            await using DbTransaction transaction = await _unitOfWork.BeginTransactionAsync(ct);
-
-            await _balanceService.UpdateBalances(document.ReceiptResources.Adapt<List<ReceiptResourceDto>>(), ct);
-
-            _documentRepository.Remove(document);
-
-            Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
-            if (errorWhenSave is not null)
-                return errorWhenSave.Value;
-
-            return new Deleted();
+            return await _documentRepository.DeleteAsync(document, ct);
         }
+
+        List<IDisposable> locks = await GetInLineAsync(document.ReceiptResources.Adapt<List<ReceiptResourceDto>>());
+
+        await using DbTransaction transaction = await _unitOfWork.BeginTransactionAsync(ct);
+
+        await _balanceService.UpdateBalances(document.ReceiptResources.Adapt<List<ReceiptResourceDto>>(), ct);
+
+        _documentRepository.Remove(document);
+
+        Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
+
+        foreach (IDisposable currentLock in locks)
+            currentLock.Dispose();
+
+        if (errorWhenSave is not null)
+            return errorWhenSave.Value;
+
+        return new Deleted();
     }
 
     public async Task<List<ReceiptDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct = default)
@@ -168,5 +177,28 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             return Error.Conflict("NumberExist", "Поставка с таким номером уже существует");
 
         return default;
+    }
+
+    private async Task<List<IDisposable>> GetInLineAsync(List<ReceiptResourceDto>? receiptResources)
+    {
+        receiptResources = receiptResources ?? new();
+
+        var resourceLocks = receiptResources
+            .Where(x => x.Quantity > 0)
+            .Select(x => (x.Resource.Id, x.Unit.Id))
+            .Distinct()
+            .ToList();
+
+        resourceLocks.Sort();
+
+        List<IDisposable> locks = new List<IDisposable>();
+
+        foreach (var (resourceId, unitId) in resourceLocks)
+        {
+            var lockObj = await _syncService.AcquireLockAsync(resourceId, unitId);
+            locks.Add(lockObj);
+        }
+
+        return locks;
     }
 }

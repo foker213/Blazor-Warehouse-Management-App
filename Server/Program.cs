@@ -1,5 +1,6 @@
 using WarehouseManagement.DataBase;
 using WarehouseManagement.Application;
+using WarehouseManagement.Server.Extensions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -22,10 +23,6 @@ if (app.Environment.IsDevelopment())
     app.UseWebAssemblyDebugging();
 }
 
-using (IServiceScope scope = app.Services.CreateScope())
-{
-    WarehouseDbContext warehouseDbContext = scope.ServiceProvider.GetRequiredService<WarehouseDbContext>();
-    warehouseDbContext.Database.EnsureCreated();
-}
+await app.MigrateDataBase();
 
 app.Run();

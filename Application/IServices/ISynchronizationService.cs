@@ -2,5 +2,5 @@
 
 internal interface ISynchronizationService
 {
-    Task<IDisposable> AcquireLockAsync();
+    Task<IDisposable> AcquireLockAsync(int resourceId, int unitId);
 }

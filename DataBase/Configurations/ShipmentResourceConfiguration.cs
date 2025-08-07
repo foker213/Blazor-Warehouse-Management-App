@@ -21,14 +21,16 @@ internal sealed class ShipmentResourceConfiguration : IEntityTypeConfiguration<S
 
         builder.HasOne(x => x.Resource)
             .WithOne(x => x.ShipmentResource)
-            .HasForeignKey<ShipmentResource>(x => x.ResourceId);
+            .HasForeignKey<ShipmentResource>(x => x.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.ResourceId)
             .HasComment("Прикрепленный ресурс");
 
         builder.HasOne(x => x.UnitOfMeasure)
             .WithOne(x => x.ShipmentResource)
-            .HasForeignKey<ShipmentResource>(x => x.UnitOfMeasureId);
+            .HasForeignKey<ShipmentResource>(x => x.UnitOfMeasureId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.UnitOfMeasureId)
             .HasComment("Прикрепленная единица измерения");

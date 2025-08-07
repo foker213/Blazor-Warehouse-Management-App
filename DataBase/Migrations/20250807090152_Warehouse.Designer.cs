@@ -12,7 +12,7 @@ using WarehouseManagement.DataBase;
 namespace WarehouseManagement.DataBase.Migrations
 {
     [DbContext(typeof(WarehouseDbContext))]
-    [Migration("20250803054617_Warehouse")]
+    [Migration("20250807090152_Warehouse")]
     partial class Warehouse
     {
         /// <inheritdoc />
