@@ -1,7 +1,4 @@
-﻿@using WarehouseManagement.Contracts;
-
-@attribute [Route(Routes.Balances.Base)]
-
+﻿@attribute [Route(Routes.Balances.Base)]
 @inject HttpClient Http
 
 <Notification @ref="_notification" />
@@ -11,32 +8,33 @@
 <div class="mb-3">
     <div class="row">
         <div class="col-md-4">
-            <label>Фильтр по ресурсу</label>
-            <select class="form-select" @bind="selectedResourceFilter">
-                <option value="">Все ресурсы</option>
-                @foreach (var resource in availableResources)
+            <label>Ресурс</label>
+            <select class="form-select" @bind="_selectedResourceFilters" multiple>
+                @foreach (string resource in _availableResources)
                 {
                     <option value="@resource">@resource</option>
                 }
             </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
         </div>
         <div class="col-md-4">
-            <label>Фильтр по единице измерения</label>
-            <select class="form-select" @bind="selectedUnitFilter">
-                <option value="">Все единицы</option>
-                @foreach (var unit in availableUnits)
+            <label>Единица измерения</label>
+            <select class="form-select" @bind="_selectedUnitFilters" multiple>
+                @foreach (string unit in _availableUnits)
                 {
                     <option value="@unit">@unit</option>
                 }
             </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
         </div>
         <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-primary" @onclick="RefreshBalance">Обновить</button>
+            <button class="btn btn-primary" @onclick="ApplyFilters">Применить</button>
+            <button class="btn btn-secondary" @onclick="ClearFilters">Сбросить</button>
         </div>
     </div>
 </div>
 
-@if (balanceItems == null)
+@if (_balanceItems == null)
 {
     <p>Загрузка...</p>
 }
@@ -51,7 +49,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var item in filteredBalanceItems)
+            @foreach (BalanceDto item in _balanceItems)
             {
                 <tr>
                     <td>@item.Resource.Name</td>
@@ -64,23 +62,48 @@ else
 }
 
 @code {
-    private List<BalanceDto>? balanceItems;
-    private List<BalanceDto> filteredBalanceItems = new();
+    private List<BalanceDto>? _balanceItems;
     private Notification? _notification;
 
-    private string selectedResourceFilter = "";
-    private string selectedUnitFilter = "";
-    private List<string> availableResources = new();
-    private List<string> availableUnits = new();
+    private string[] _selectedResourceFilters = Array.Empty<string>();
+    private string[] _selectedUnitFilters = Array.Empty<string>();
+    private List<string> _availableResources = new();
+    private List<string> _availableUnits = new();
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadFilters();
         await LoadBalance();
+    }
+
+    private async Task LoadFilters()
+    {
+        HttpResponseMessage? response = await Http.GetAsync(Routes.Resources.Api);
+        if (response.IsSuccessStatusCode)
+        {
+            List<ResourceDto> resources = await response.Content.ReadFromJsonAsync<List<ResourceDto>>() ?? new();
+            _availableResources.AddRange(resources.Select(x => x.Name));
+        }
+        else
+        {
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+        }
+
+        response = await Http.GetAsync(Routes.Units.Api);
+        if (response.IsSuccessStatusCode)
+        {
+            List<UnitDto> units = await response.Content.ReadFromJsonAsync<List<UnitDto>>() ?? new();
+            _availableUnits.AddRange(units.Select(x => x.Name));
+        }
+        else
+        {
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+        }
     }
 
     private async Task LoadBalance()
     {
-        var response = await Http.GetAsync(Routes.Balances.Api);
+        HttpResponseMessage? response = await Http.GetAsync(Routes.Balances.Api);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -88,39 +111,37 @@ else
             return;
         }
 
-        balanceItems = await response.Content.ReadFromJsonAsync<List<BalanceDto>>();
-
-        if (balanceItems != null)
-        {
-            availableResources = balanceItems.Select(x => x.Resource.Name).Distinct().ToList();
-            availableUnits = balanceItems.Select(x => x.UnitOfMeasure.Name).Distinct().ToList();
-
-            ApplyFilters();
-        }
+        _balanceItems = await response.Content.ReadFromJsonAsync<List<BalanceDto>>();
     }
 
-    private async Task RefreshBalance()
+    private async Task LoadBalanceWithFilters()
     {
+        FilterDto filter = new()
+        {
+            Resources = _selectedResourceFilters.Any() ? _selectedResourceFilters.ToList() : null,
+            UnitsOfMeasure = _selectedUnitFilters.Any() ? _selectedUnitFilters.ToList() : null
+        };
+
+        HttpResponseMessage? response = await Http.PostAsJsonAsync(Routes.Balances.Api + "/filter", filter);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.Show(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _balanceItems = await response.Content.ReadFromJsonAsync<List<BalanceDto>>();
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadBalanceWithFilters();
+    }
+
+    private async Task ClearFilters()
+    {
+        _selectedResourceFilters = Array.Empty<string>();
+        _selectedUnitFilters = Array.Empty<string>();
         await LoadBalance();
-        _notification?.Show("Данные обновлены", false);
-    }
-
-    private void ApplyFilters()
-    {
-        if (balanceItems == null) return;
-
-        var query = balanceItems.AsQueryable();
-
-        if (!string.IsNullOrEmpty(selectedResourceFilter))
-        {
-            query = query.Where(x => x.Resource.Name == selectedResourceFilter);
-        }
-
-        if (!string.IsNullOrEmpty(selectedUnitFilter))
-        {
-            query = query.Where(x => x.UnitOfMeasure.Name == selectedUnitFilter);
-        }
-
-        filteredBalanceItems = query.ToList();
     }
 }

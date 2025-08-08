@@ -16,7 +16,8 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
             .Include(x => x.ShipmentResources)
                 .ThenInclude(x => x.Resource)
             .Include(x => x.ShipmentResources)
-                .ThenInclude(x => x.UnitOfMeasure);
+                .ThenInclude(x => x.UnitOfMeasure)
+            .Include(x => x.Client);
     }
 
     public Task<ErrorOr<Updated>> ChangeStatusAsync(int id, CancellationToken ct = default)
@@ -28,29 +29,24 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
     {
         IQueryable<ShipmentDocument> query = GetQuery();
 
-        if (!string.IsNullOrEmpty(filter.Number))
-        {
-            query = query.Where(x => x.Number.ToLower() == filter.Number.ToLower());
-        }
+        if (filter.Resources is not null && filter.Resources.Count > 0)
+            query = query.Where(x => x.ShipmentResources != null &&
+                                    x.ShipmentResources.Any(rr => filter.Resources.Contains(rr.Resource.Name)));
 
-        if (!string.IsNullOrEmpty(filter.Client))
-        {
-            query = query.Where(x => x.Client.Name.ToLower() == filter.Client.ToLower());
-        }
+        if (filter.UnitsOfMeasure is not null && filter.UnitsOfMeasure.Count > 0)
+            query = query.Where(x => x.ShipmentResources != null &&
+                                    x.ShipmentResources.Any(rr => filter.UnitsOfMeasure.Contains(rr.UnitOfMeasure.Name)));
 
-        if (!string.IsNullOrEmpty(filter.Resource))
-        {
-            query = query.Where(x => x.ShipmentResources
-                .Any(r => r.Resource != null &&
-                         r.Resource.Name.ToLower() == filter.Resource.ToLower()));
-        }
+        if (filter.Numbers is not null && filter.Numbers.Count > 0)
+            query = query.Where(x => filter.Numbers.Any(s => s == x.Number));
 
-        if (!string.IsNullOrEmpty(filter.UnitOfMeasure))
-        {
-            query = query.Where(x => x.ShipmentResources
-                .Any(r => r.UnitOfMeasure != null &&
-                         r.UnitOfMeasure.Name.ToLower() == filter.UnitOfMeasure.ToLower()));
-        }
+        if (filter.Clients is not null && filter.Clients.Count > 0)
+            query = query.Where(x => filter.Clients.Any(s => s == x.Client.Name));
+
+        query = query.Where(x => x.Date >= filter.DateStart!.Value);
+
+        DateOnly endDate = filter.DateEnd!.Value.AddDays(1);
+        query = query.Where(x => x.Date < endDate);
 
         return await query.ToListAsync(ct);
     }

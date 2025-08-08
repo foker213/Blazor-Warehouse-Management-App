@@ -24,31 +24,21 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
     {
         IQueryable<ReceiptDocument> query = GetQuery();
 
-        if (!string.IsNullOrEmpty(filter.Number))
-        {
-            query = query.Where(x => x.Number.ToLower() == filter.Number.ToLower());
-        }
+        if (filter.Resources is not null && filter.Resources.Count > 0)
+            query = query.Where(x => x.ReceiptResources != null &&
+                                    x.ReceiptResources.Any(rr => filter.Resources.Contains(rr.Resource.Name)));
+
+        if (filter.UnitsOfMeasure is not null && filter.UnitsOfMeasure.Count > 0)
+            query = query.Where(x => x.ReceiptResources != null &&
+                                    x.ReceiptResources.Any(rr => filter.UnitsOfMeasure.Contains(rr.UnitOfMeasure.Name)));
+
+        if (filter.Numbers is not null && filter.Numbers.Count > 0)
+            query = query.Where(x => filter.Numbers.Any(s => s == x.Number));
 
         query = query.Where(x => x.Date >= filter.DateStart!.Value);
 
         DateOnly endDate = filter.DateEnd!.Value.AddDays(1);
         query = query.Where(x => x.Date < endDate);
-
-        query = query.Where(x => x.ReceiptResources != null && x.ReceiptResources.Any());
-
-        if (!string.IsNullOrEmpty(filter.Resource))
-        {
-            query = query.Where(x => x.ReceiptResources!
-                .Any(r => r.Resource != null &&
-                         r.Resource.Name.ToLower() == filter.Resource.ToLower()));
-        }
-
-        if (!string.IsNullOrEmpty(filter.UnitOfMeasure))
-        {
-            query = query.Where(x => x.ReceiptResources!
-                .Any(r => r.UnitOfMeasure != null &&
-                         r.UnitOfMeasure.Name.ToLower() == filter.UnitOfMeasure.ToLower()));
-        }
 
         return await query.ToListAsync(ct);
     }

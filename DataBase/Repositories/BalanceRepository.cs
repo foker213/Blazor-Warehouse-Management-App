@@ -20,11 +20,11 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
     {
         IQueryable<Balance> query = GetQuery();
 
-        if (!string.IsNullOrEmpty(filter.Resource))
-            query = query.Where(x => x.Resource.Name.ToLower() == filter.Resource);
+        if (filter.Resources is not null && filter.Resources.Count > 0)
+            query = query.Where(x => filter.Resources.Any(s => s == x.Resource.Name));
 
-        if (!string.IsNullOrEmpty(filter.UnitOfMeasure))
-            query = query.Where(x => x.UnitOfMeasure.Name.ToLower() == filter.UnitOfMeasure);
+        if (filter.UnitsOfMeasure is not null && filter.UnitsOfMeasure.Count > 0)
+            query = query.Where(x => filter.UnitsOfMeasure.Any(s => s == x.UnitOfMeasure.Name));
 
         return await query.ToListAsync(ct);
     }
