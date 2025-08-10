@@ -10,9 +10,4 @@ public interface IBalanceService
 {
     Task<List<BalanceDto>> GetAll(CancellationToken ct);
     Task<List<BalanceDto>> FilterAsync(FilterDto filter, CancellationToken ct);
-    Task UpdateBalances(IEnumerable<ReceiptResourceDto> resources, CancellationToken ct);
-    Task<ErrorOr<Success>> HandleRemovedResourcesAsync(
-        IEnumerable<ReceiptResource> oldResources,
-        IEnumerable<ReceiptResourceDto> newResources,
-        CancellationToken ct);
 }

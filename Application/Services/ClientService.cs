@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using Mapster;
+using System.IO.Pipelines;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Application.IServices;
 using WarehouseManagement.Contracts.Client;
@@ -19,14 +20,14 @@ internal sealed class ClientService : IClientService
 
     public async Task<List<ClientDto>> GetAll(CancellationToken ct = default)
     {
-        List<Client> items = await _clientRepository.GetAll(ct);
+        List<Client> items = await _clientRepository.GetAllAsync(ct);
 
         return items.Adapt<List<ClientDto>>();
     }
 
     public async Task<ErrorOr<ClientDto>> GetBy(int id, CancellationToken ct = default)
     {
-        Client? client = await _clientRepository.GetBy(id, ct);
+        Client? client = await _clientRepository.GetByAsync(id, ct);
 
         if (client is null)
             return ErrorOr<ClientDto>.From(new List<Error> { Error.NotFound() });
@@ -40,12 +41,9 @@ internal sealed class ClientService : IClientService
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
-        ErrorOr<Created> result = await _clientRepository.CreateAsync(client.Adapt<Client>(), ct);
+        await _clientRepository.CreateAsync(client.Adapt<Client>(), ct);
 
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Created;
     }
 
     public async Task<ErrorOr<Updated>> UpdateAsync(ClientUpdateDto client, CancellationToken ct = default)
@@ -54,17 +52,14 @@ internal sealed class ClientService : IClientService
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
-        ErrorOr<Updated> result = await _clientRepository.UpdateAsync(client.Adapt<Client>(), ct);
+        await _clientRepository.UpdateAsync(client.Adapt<Client>(), ct);
 
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Updated;
     }
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default)
     {
-        Client? client = await _clientRepository.GetBy(id);
+        Client? client = await _clientRepository.GetByAsync(id);
 
         if (client == null)
             return ErrorOr<Deleted>.From(new List<Error> { Error.NotFound() });
@@ -72,17 +67,14 @@ internal sealed class ClientService : IClientService
         if(client.ShipmentDocument is not null)
             return ErrorOr<Deleted>.From(new List<Error> { Error.Conflict("Deleted", "Невозможно удалить: клиент используется") });
 
-        ErrorOr<Deleted> result = await _clientRepository.DeleteAsync(client, ct);
+        await _clientRepository.DeleteAsync(client, ct);
 
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Deleted;
     }
 
     public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
     {
-        Client? resource = await _clientRepository.GetBy(id, ct);
+        Client? resource = await _clientRepository.GetByAsync(id, ct);
         if (resource == null)
             return Error.NotFound("ClientNotFound", "Клиент не найден");
 

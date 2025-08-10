@@ -18,14 +18,14 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
     }
     public async Task<List<UnitDto>> GetAll(CancellationToken ct = default)
     {
-        List<UnitOfMeasure> items = await _unitOfMeasureRepository.GetAll(ct);
+        List<UnitOfMeasure> items = await _unitOfMeasureRepository.GetAllAsync(ct);
 
         return items.Adapt<List<UnitDto>>();
     }
 
     public async Task<ErrorOr<UnitDto>> GetBy(int id, CancellationToken ct = default)
     {
-        UnitOfMeasure? unit = await _unitOfMeasureRepository.GetBy(id, ct);
+        UnitOfMeasure? unit = await _unitOfMeasureRepository.GetByAsync(id, ct);
 
         if (unit is null)
             return ErrorOr<UnitDto>.From(new List<Error> { Error.NotFound() });
@@ -39,12 +39,9 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
-        ErrorOr<Created> result = await _unitOfMeasureRepository.CreateAsync(unit.Adapt<UnitOfMeasure>(), ct);
+        await _unitOfMeasureRepository.CreateAsync(unit.Adapt<UnitOfMeasure>(), ct);
 
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Created;
     }
 
     public async Task<ErrorOr<Updated>> UpdateAsync(UnitUpdateDto unit, CancellationToken ct = default)
@@ -53,35 +50,29 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
-        ErrorOr<Updated> result = await _unitOfMeasureRepository.UpdateAsync(unit.Adapt<UnitOfMeasure>(), ct);
+        await _unitOfMeasureRepository.UpdateAsync(unit.Adapt<UnitOfMeasure>(), ct);
 
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Updated;
     }
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default)
     {
-        UnitOfMeasure? unit = await _unitOfMeasureRepository.GetBy(id);
+        UnitOfMeasure? unit = await _unitOfMeasureRepository.GetByAsync(id);
 
         if (unit == null)
             return ErrorOr<Deleted>.From(new List<Error> { Error.NotFound() });
 
-        if (unit.ShipmentResource is not null || unit.ReceiptResource is not null)
+        if (unit.ShipmentResources is not null || unit.ReceiptResources is not null)
             return ErrorOr<Deleted>.From(new List<Error> { Error.Conflict("Deleted", "Невозможно удалить: единица измерения используется") });
 
-        ErrorOr<Deleted> result = await _unitOfMeasureRepository.DeleteAsync(unit, ct);
+        await _unitOfMeasureRepository.DeleteAsync(unit, ct);
 
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Deleted;
     }
 
     public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
     {
-        UnitOfMeasure? resource = await _unitOfMeasureRepository.GetBy(id, ct);
+        UnitOfMeasure? resource = await _unitOfMeasureRepository.GetByAsync(id, ct);
         if (resource == null)
             return Error.NotFound("ClientNotFound", "Клиент не найден");
 

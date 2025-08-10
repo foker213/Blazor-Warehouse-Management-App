@@ -14,7 +14,7 @@ public class Resource : Entity
     /// </summary>
     public State State { get; set; }
 
-    public Balance? Balance { get; set; }
-    public ReceiptResource? ReceiptResource { get; set; }
-    public ShipmentResource? ShipmentResource { get; set; }
+    public ICollection<Balance>? Balances { get; set; }
+    public ICollection<ReceiptResource>? ReceiptResources { get; set; }
+    public ICollection<ShipmentResource>? ShipmentResources { get; set; }
 }

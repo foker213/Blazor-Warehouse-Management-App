@@ -23,14 +23,14 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
 
     public async Task<List<ShipmentDocumentDto>> GetAll(CancellationToken ct = default)
     {
-        List<ShipmentDocument> items = await _documentRepository.GetAll(ct);
+        List<ShipmentDocument> items = await _documentRepository.GetAllAsync(ct);
 
         return items.Adapt<List<ShipmentDocumentDto>>();
     }
 
     public async Task<ErrorOr<ShipmentDocumentDto>> GetBy(int id, CancellationToken ct = default)
     {
-        ShipmentDocument? client = await _documentRepository.GetBy(id, ct);
+        ShipmentDocument? client = await _documentRepository.GetByAsync(id, ct);
 
         if (client is null)
             return ErrorOr<ShipmentDocumentDto>.From(new List<Error> { Error.NotFound() });
@@ -45,12 +45,7 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
-        ErrorOr<Created> result = await _documentRepository.CreateAsync(shipment.Adapt<ShipmentDocument>(), ct);
-
-        if (result.IsError)
-            return result.FirstError;
-
-        return result;
+        return Result.Created;
     }
 
     public Task<ErrorOr<Updated>> UpdateAsync(ShipmentDocumentDto shipment, CancellationToken ct = default)
