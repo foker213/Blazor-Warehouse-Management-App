@@ -19,5 +19,5 @@ public class Client : Entity
     /// </summary>
     public State State { get; set; }
 
-    public ShipmentDocument? ShipmentDocument { get; set; }
+    public List<ShipmentDocument>? ShipmentDocuments { get; set; }
 }

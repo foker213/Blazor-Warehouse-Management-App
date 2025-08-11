@@ -20,16 +20,16 @@ internal sealed class ShipmentResourceConfiguration : IEntityTypeConfiguration<S
             .HasComment("Количество");
 
         builder.HasOne(x => x.Resource)
-            .WithOne(x => x.ShipmentResource)
-            .HasForeignKey<ShipmentResource>(x => x.ResourceId)
+            .WithMany(x => x.ShipmentResources)
+            .HasForeignKey(x => x.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.ResourceId)
             .HasComment("Прикрепленный ресурс");
 
         builder.HasOne(x => x.UnitOfMeasure)
-            .WithOne(x => x.ShipmentResource)
-            .HasForeignKey<ShipmentResource>(x => x.UnitOfMeasureId)
+            .WithMany(x => x.ShipmentResources)
+            .HasForeignKey(x => x.UnitOfMeasureId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.UnitOfMeasureId)

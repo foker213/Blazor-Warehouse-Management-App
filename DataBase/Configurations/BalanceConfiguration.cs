@@ -17,15 +17,15 @@ internal sealed class BalanceConfiguration : IEntityTypeConfiguration<Balance>
             .HasComment("Идентификатор");
 
         builder.HasOne(x => x.Resource)
-           .WithOne(x => x.Balance)
-           .HasForeignKey<Balance>(x => x.ResourceId);
+           .WithMany(x => x.Balances)
+           .HasForeignKey(x => x.ResourceId);
 
         builder.Property(x => x.ResourceId)
             .HasComment("Прикрепленный ресурс");
 
         builder.HasOne(x => x.UnitOfMeasure)
-            .WithOne(x => x.Balance)
-            .HasForeignKey<Balance>(x => x.UnitOfMeasureId);
+            .WithMany(x => x.Balances)
+            .HasForeignKey(x => x.UnitOfMeasureId);
 
         builder.Property(x => x.UnitOfMeasureId)
             .HasComment("Прикрепленная единица измерения");

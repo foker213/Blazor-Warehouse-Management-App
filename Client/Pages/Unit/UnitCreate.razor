@@ -52,14 +52,14 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         Model = new();
         await OnUnitCreated.InvokeAsync();
 
-        _notification?.Show("Единица измерения была успешно создана!", false);
+        _notification?.ShowAsync("Единица измерения была успешно создана!", false);
 
         await Close();
     }

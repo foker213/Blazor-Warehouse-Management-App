@@ -58,14 +58,14 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         Model = new();
         await OnClientCreated.InvokeAsync();
 
-        _notification?.Show("Клиент был успешно создан!", false);
+        _notification?.ShowAsync("Клиент был успешно создан!", false);
 
         await Close();
     }

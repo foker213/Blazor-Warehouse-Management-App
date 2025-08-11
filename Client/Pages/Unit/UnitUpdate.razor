@@ -77,13 +77,13 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         await OnUnitUpdated.InvokeAsync();
 
-        _notification?.Show("Единица измерения была успешно обновлена", false);
+        _notification?.ShowAsync("Единица измерения была успешно обновлена", false);
 
         await Close();
     }

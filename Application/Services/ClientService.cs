@@ -18,14 +18,14 @@ internal sealed class ClientService : IClientService
         _clientRepository = clientRepository;
     }
 
-    public async Task<List<ClientDto>> GetAll(CancellationToken ct = default)
+    public async Task<List<ClientDto>> GetAll(CancellationToken ct)
     {
         List<Client> items = await _clientRepository.GetAllAsync(ct);
 
         return items.Adapt<List<ClientDto>>();
     }
 
-    public async Task<ErrorOr<ClientDto>> GetBy(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<ClientDto>> GetBy(int id, CancellationToken ct)
     {
         Client? client = await _clientRepository.GetByAsync(id, ct);
 
@@ -35,9 +35,9 @@ internal sealed class ClientService : IClientService
         return client.Adapt<ClientDto>();
     }
 
-    public async Task<ErrorOr<Created>> CreateAsync(ClientCreateDto client, CancellationToken ct = default)
+    public async Task<ErrorOr<Created>> CreateAsync(ClientCreateDto client, CancellationToken ct)
     {
-        Error? error = await ValidateClient(client.Name);
+        Error? error = await ValidateClient(client.Name, ct);
         if (error is not null)
             return ErrorOr<Created>.From(new List<Error> { error.Value });
 
@@ -46,9 +46,9 @@ internal sealed class ClientService : IClientService
         return Result.Created;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(ClientUpdateDto client, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> UpdateAsync(ClientUpdateDto client, CancellationToken ct)
     {
-        Error? error = await ValidateClient(client.Name, client.Id, ct);
+        Error? error = await ValidateClient(client.Name, ct, client.Id);
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
@@ -57,14 +57,14 @@ internal sealed class ClientService : IClientService
         return Result.Updated;
     }
 
-    public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct)
     {
-        Client? client = await _clientRepository.GetByAsync(id);
+        Client? client = await _clientRepository.GetByAsync(id, ct);
 
         if (client == null)
             return ErrorOr<Deleted>.From(new List<Error> { Error.NotFound() });
 
-        if(client.ShipmentDocument is not null)
+        if(client.ShipmentDocuments is not null && client.ShipmentDocuments.Count != 0)
             return ErrorOr<Deleted>.From(new List<Error> { Error.Conflict("Deleted", "Невозможно удалить: клиент используется") });
 
         await _clientRepository.DeleteAsync(client, ct);
@@ -72,7 +72,7 @@ internal sealed class ClientService : IClientService
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct)
     {
         Client? resource = await _clientRepository.GetByAsync(id, ct);
         if (resource == null)
@@ -86,7 +86,7 @@ internal sealed class ClientService : IClientService
         return await _clientRepository.ChangeStateAsync(resource, ct);
     }
 
-    private async Task<Error?> ValidateClient(string name, int id = 0, CancellationToken ct = default)
+    private async Task<Error?> ValidateClient(string name, CancellationToken ct, int id = 0)
     {
         if (string.IsNullOrWhiteSpace(name))
         {

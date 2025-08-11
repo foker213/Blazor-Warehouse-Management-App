@@ -6,10 +6,10 @@ namespace WarehouseManagement.Application.IServices;
 
 public interface IReceiptDocumentService
 {
-    Task<List<ReceiptDocumentDto>> GetAll(CancellationToken ct = default);
-    Task<ErrorOr<ReceiptDocumentDto>> GetBy(int id, CancellationToken ct = default);
-    Task<ErrorOr<Created>> CreateAsync(ReceiptDocumentDto entity, CancellationToken ct = default);
-    Task<ErrorOr<Updated>> UpdateAsync(ReceiptDocumentDto entity, CancellationToken ct = default);
-    Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default);
-    Task<List<ReceiptDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct = default);
+    Task<List<ReceiptDocumentDto>> GetAll(CancellationToken ct);
+    Task<ErrorOr<ReceiptDocumentUpdateDto>> GetBy(int id, CancellationToken ct);
+    Task<ErrorOr<Created>> CreateAsync(ReceiptDocumentCreateDto entity, CancellationToken ct);
+    Task<ErrorOr<Updated>> UpdateAsync(ReceiptDocumentUpdateDto entity, CancellationToken ct);
+    Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct);
+    Task<List<ReceiptDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct);
 }

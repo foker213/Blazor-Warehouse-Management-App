@@ -27,24 +27,24 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
         _syncService = syncService;
     }
 
-    public async Task<List<ReceiptDocumentDto>> GetAll(CancellationToken ct = default)
+    public async Task<List<ReceiptDocumentDto>> GetAll(CancellationToken ct)
     {
         List<ReceiptDocument> items = await _documentRepository.GetAllAsync(ct);
 
         return items.Adapt<List<ReceiptDocumentDto>>();
     }
 
-    public async Task<ErrorOr<ReceiptDocumentDto>> GetBy(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<ReceiptDocumentUpdateDto>> GetBy(int id, CancellationToken ct)
     {
         ReceiptDocument? client = await _documentRepository.GetByAsync(id, ct);
 
         if (client is null)
-            return ErrorOr<ReceiptDocumentDto>.From(new List<Error> { Error.NotFound() });
+            return ErrorOr<ReceiptDocumentUpdateDto>.From(new List<Error> { Error.NotFound() });
 
-        return client.Adapt<ReceiptDocumentDto>();
+        return client.Adapt<ReceiptDocumentUpdateDto>();
     }
 
-    public async Task<ErrorOr<Created>> CreateAsync(ReceiptDocumentDto receipt, CancellationToken ct = default)
+    public async Task<ErrorOr<Created>> CreateAsync(ReceiptDocumentCreateDto receipt, CancellationToken ct)
     {
         ErrorOr<ReceiptDocument> documentResult = await CreateDocumentAsync(receipt, ct);
 
@@ -74,7 +74,7 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
         return Result.Created;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(ReceiptDocumentDto receipt, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> UpdateAsync(ReceiptDocumentUpdateDto receipt, CancellationToken ct)
     {
         ReceiptDocument? existingDocument = await _documentRepository.GetByAsync(receipt.Id, ct);
         if (existingDocument is null)
@@ -105,12 +105,9 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
             existingDocument.RemoveResources(deletedReceiptsResource);
 
-            foreach (ReceiptResourceDto receiptResource in receipt.ReceiptResources)
+            foreach (ReceiptResourceUpdateDto receiptResource in receipt.ReceiptResources)
             {
-                Resource resource = receiptResource.Resource.Adapt<Resource>();
-                UnitOfMeasure unit = receiptResource.UnitOfMeasure.Adapt<UnitOfMeasure>();
-
-                existingDocument.AddResource(resource.Id, unit.Id, receiptResource.Quantity, receiptResource.Id);
+                existingDocument.AddResource(receiptResource.ResourceId, receiptResource.UnitOfMeasureId, receiptResource.Quantity, receiptResource.Id);
             }
         }
 
@@ -126,6 +123,8 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
                 if (result.IsError)
                     return result.Errors.First();
+
+                balances.Add(balance);
             }
             else
             {
@@ -168,26 +167,26 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             }
         }
 
-        List<IDisposable> locks = await GetInLineAsync(receipt.ReceiptResources);
+        List<IDisposable> locks = await GetInLineAsync(existingDocument.ReceiptResources.ToList());
 
         try
         {
             await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
 
             _documentRepository.Update(existingDocument);
-            await _unitOfWork.SaveChangesAsync();
 
             foreach (Balance balance in balances)
             {
                 if (balance.Quantity == 0)
+                {
+                    // получаем из репозитория ресурсов поставок по id ресурса и единицы элемент, если null, то удалить, если существует, то update с кол-вом 0.
                     _balanceRepository.Remove(balance);
+                }
                 else if (balance.Id == 0)
                     _balanceRepository.Add(balance);
                 else
                     _balanceRepository.Update(balance);
             }
-
-            await _unitOfWork.SaveChangesAsync();
 
             Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
             return errorWhenSave is null
@@ -238,7 +237,7 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             }
         }
 
-        List<IDisposable> locks = await GetInLineAsync(existingDocument.ReceiptResources.Adapt<List<ReceiptResourceDto>>());
+        List<IDisposable> locks = await GetInLineAsync(existingDocument.ReceiptResources.ToList());
 
         try
         {
@@ -249,6 +248,7 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             foreach (Balance balance in balances)
             {
                 if (balance.Quantity == 0)
+                    // получаем из репозитория ресурсов поставок по id ресурса и единицы элемент, если null, то удалить, если существует, то update с кол-вом 0.
                     _balanceRepository.Remove(balance);
                 else
                     _balanceRepository.Update(balance);
@@ -271,20 +271,20 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
         }
     }
 
-    public async Task<List<ReceiptDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct = default)
+    public async Task<List<ReceiptDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct)
     {
         List<ReceiptDocument> items = await _documentRepository.FilterAsync(filter, ct);
 
         return items.Adapt<List<ReceiptDocumentDto>>();
     }
 
-    private async Task<List<IDisposable>> GetInLineAsync(List<ReceiptResourceDto>? receiptResources)
+    private async Task<List<IDisposable>> GetInLineAsync(List<ReceiptResource>? receiptResources)
     {
         receiptResources = receiptResources ?? new();
 
         var resourceLocks = receiptResources
             .Where(x => x.Quantity > 0)
-            .Select(x => (x.Resource.Id, x.UnitOfMeasure.Id))
+            .Select(x => (x.ResourceId, x.UnitOfMeasureId))
             .Distinct()
             .ToList();
 
@@ -302,7 +302,7 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
     }
 
     private async Task<ErrorOr<ReceiptDocument>> CreateDocumentAsync(
-    ReceiptDocumentDto receipt,
+    ReceiptDocumentCreateDto receipt,
     CancellationToken ct)
     {
         ReceiptDocument? existingDocument = await _documentRepository
@@ -316,7 +316,7 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
     private async Task<ErrorOr<List<Balance>>> ProcessResourcesAsync(
         ReceiptDocument document,
-        List<ReceiptResourceDto> resources,
+        List<ReceiptResourceCreateDto> resources,
         CancellationToken ct)
     {
         List<Balance> balances = new();
@@ -324,7 +324,7 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
         try
         {
-            locks = await GetInLineAsync(resources);
+            locks = await GetInLineAsync(document.ReceiptResources.ToList());
 
             foreach (var resourceDto in resources)
             {
@@ -350,17 +350,14 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
     private async Task<ErrorOr<Balance>> ProcessSingleResource(
         ReceiptDocument document,
-        ReceiptResourceDto resourceDto,
+        ReceiptResourceCreateDto resourceDto,
         CancellationToken ct)
     {
-        Resource resource = resourceDto.Resource.Adapt<Resource>();
-        UnitOfMeasure unit = resourceDto.UnitOfMeasure.Adapt<UnitOfMeasure>();
-
-        var addResult = document.AddResource(resource.Id, unit.Id, resourceDto.Quantity);
+        var addResult = document.AddResource(resourceDto.ResourceId, resourceDto.UnitOfMeasureId, resourceDto.Quantity);
         if (addResult.IsError) return addResult.Errors;
 
         Balance? balance = await _balanceRepository
-            .GetByIdsAsync(resource.Id, unit.Id, ct);
+            .GetByIdsAsync(resourceDto.ResourceId, resourceDto.UnitOfMeasureId, ct);
 
         if (balance is not null)
         {
@@ -368,13 +365,13 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             return balance;
         }
 
-        return Balance.Create(resource.Id, unit.Id, resourceDto.Quantity);
+        return Balance.Create(resourceDto.ResourceId, resourceDto.UnitOfMeasureId, resourceDto.Quantity);
     }
 
     private async Task<ErrorOr<Success>> SaveDocumentAsync(
         ReceiptDocument document,
         List<Balance> balances,
-        List<ReceiptResourceDto>? resources,
+        List<ReceiptResourceCreateDto>? resources,
         CancellationToken ct)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);

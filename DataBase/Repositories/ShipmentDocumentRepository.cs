@@ -20,9 +20,18 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
             .Include(x => x.Client);
     }
 
+    private IQueryable<ShipmentDocument> GetQueryWithoutThenIncludes()
+        => DbSet.AsNoTracking().Include(x => x.ShipmentResources);
+
     public Task<ErrorOr<Updated>> ChangeStatusAsync(int id, CancellationToken ct = default)
     {
         throw new NotImplementedException();
+    }
+
+    public override async Task<ShipmentDocument?> GetByAsync(int id, CancellationToken ct = default)
+    {
+        IQueryable<ShipmentDocument> query = GetQueryWithoutThenIncludes();
+        return await query.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
     }
 
     public async Task<List<ShipmentDocument>> FilterAsync(FilterDto filter, CancellationToken ct = default)
@@ -41,7 +50,8 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
             query = query.Where(x => filter.Numbers.Any(s => s == x.Number));
 
         if (filter.Clients is not null && filter.Clients.Count > 0)
-            query = query.Where(x => filter.Clients.Any(s => s == x.Client.Name));
+            query = query.Where(x => x.Client != null &&
+                            filter.Clients.Any(s => s == x.Client.Name));
 
         query = query.Where(x => x.Date >= filter.DateStart!.Value);
 
@@ -51,9 +61,18 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
         return await query.ToListAsync(ct);
     }
 
-    public async Task<ShipmentDocument?> GetByNumber(string number, CancellationToken ct = default)
+    public async Task<ShipmentDocument?> GetByNumberAsync(string number, CancellationToken ct = default)
     {
         IQueryable<ShipmentDocument> query = GetQuery();
         return await query.Where(x => x.Number.ToLower() == number.ToLower()).FirstOrDefaultAsync(ct);
     }
+
+    public void Add(ShipmentDocument document)
+        => DbSet.Add(document);
+
+    public void Update(ShipmentDocument document)
+        => DbSet.Update(document);
+
+    public void Remove(ShipmentDocument document)
+        => DbSet.Remove(document);
 }

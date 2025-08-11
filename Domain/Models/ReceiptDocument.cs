@@ -58,7 +58,7 @@ public class ReceiptDocument : Entity
         }
         else
         {
-            ErrorOr<ReceiptResource> receiptResource = ReceiptResource.Create(resourceId, unitId, quantity, this);
+            ErrorOr<ReceiptResource> receiptResource = ReceiptResource.Create(resourceId, unitId, quantity, this.Id);
             if (receiptResource.IsError)
                 return receiptResource.Errors;
 

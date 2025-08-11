@@ -17,14 +17,14 @@ internal sealed class ResourceService : IResourceService
         _resourceRepository = resourceRepository;
     }
 
-    public async Task<List<ResourceDto>> GetAll(CancellationToken ct = default)
+    public async Task<List<ResourceDto>> GetAll(CancellationToken ct)
     {
         List<Resource> items = await _resourceRepository.GetAllAsync(ct);
 
         return items.Adapt<List<ResourceDto>>();
     }
 
-    public async Task<ErrorOr<ResourceDto>> GetBy(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<ResourceDto>> GetBy(int id, CancellationToken ct)
     {
         Resource? resource = await _resourceRepository.GetByAsync(id, ct);
 
@@ -34,7 +34,7 @@ internal sealed class ResourceService : IResourceService
         return resource.Adapt<ResourceDto>();
     }
 
-    public async Task<ErrorOr<Created>> CreateAsync(ResourceCreateDto resource, CancellationToken ct = default)
+    public async Task<ErrorOr<Created>> CreateAsync(ResourceCreateDto resource, CancellationToken ct)
     {
         Error? error = await ValidateResource(resource.Name, ct);
         if (error is not null)
@@ -45,9 +45,9 @@ internal sealed class ResourceService : IResourceService
         return Result.Created;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(ResourceUpdateDto resource, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> UpdateAsync(ResourceUpdateDto resource, CancellationToken ct)
     {
-        Error? error = await ValidateResource(resource.Name, ct);
+        Error? error = await ValidateResource(resource.Name, ct, resource.Id);
         if (error is not null)
             return ErrorOr<Updated>.From(new List<Error> { error.Value });
 
@@ -56,14 +56,15 @@ internal sealed class ResourceService : IResourceService
         return Result.Updated;
     }
 
-    public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct)
     {
         Resource? resource = await _resourceRepository.GetByAsync(id);
 
         if (resource == null)
             return ErrorOr<Deleted>.From(new List<Error> { Error.NotFound() });
 
-        if (resource.ShipmentResources is not null || resource.ReceiptResources is not null)
+        if ((resource.ShipmentResources is not null && resource.ShipmentResources.Count != 0) ||
+            (resource.ReceiptResources is not null && resource.ReceiptResources.Count != 0))
             return ErrorOr<Deleted>.From(new List<Error> { Error.Conflict("Deleted", "Невозможно удалить: ресурс используется") });
 
         await _resourceRepository.DeleteAsync(resource, ct);
@@ -71,7 +72,7 @@ internal sealed class ResourceService : IResourceService
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct = default)
+    public async Task<ErrorOr<Updated>> ChangeStateAsync(int id, CancellationToken ct)
     {
         Resource? resource = await _resourceRepository.GetByAsync(id, ct);
         if (resource == null)
@@ -85,7 +86,7 @@ internal sealed class ResourceService : IResourceService
         return await _resourceRepository.ChangeStateAsync(resource, ct);
     }
 
-    private async Task<Error?> ValidateResource(string name, CancellationToken ct)
+    private async Task<Error?> ValidateResource(string name, CancellationToken ct, int id = 0)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -94,7 +95,7 @@ internal sealed class ResourceService : IResourceService
 
         Resource? response = await _resourceRepository.GetByName(name, ct);
 
-        if (response is not null)
+        if (response is not null && id != response.Id)
             return Error.Conflict("Name", "Ресурс с таким наименованием уже существует");
 
         return default;

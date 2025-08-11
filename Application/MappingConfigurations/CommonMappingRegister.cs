@@ -21,19 +21,27 @@ public class CommonMappingRegister : IRegister
         config.NewConfig<ClientCreateDto, Resource>();
         config.NewConfig<ClientUpdateDto, Resource>();
 
-        config.NewConfig<ReceiptDocumentDto, ReceiptDocument>();
-        config.NewConfig<ReceiptDocument, ReceiptDocumentDto>();
-        config.NewConfig<ReceiptResourceDto, ReceiptResource>();
-        config.NewConfig<ReceiptResource, ReceiptResourceDto>();
-        config.NewConfig<List<ReceiptResource>, List<ReceiptResourceDto>>();
-        config.NewConfig<List<ReceiptResourceDto>, List<ReceiptResource>>();
+        config.NewConfig<ReceiptDocument, ReceiptDocumentDto>()
+            .Map(dest => dest.Date, src => src.Date.ToDateTime(TimeOnly.MinValue))
+            .Map(dest => dest.ReceiptResources, src => src.ReceiptResources.Adapt<List<ReceiptResourceDto>>());
 
-        config.NewConfig<ShipmentDocumentDto, ShipmentDocument>();
-        config.NewConfig<ShipmentDocument, ShipmentDocumentDto>();
-        config.NewConfig<ShipmentResourceDto, ShipmentResource>();
-        config.NewConfig<ShipmentResource, ShipmentResourceDto>();
-        config.NewConfig<List<ShipmentResource>, List<ShipmentResourceDto>>();
-        config.NewConfig<List<ShipmentResourceDto>, List<ShipmentResource>>();
+        config.NewConfig<ReceiptResource, ReceiptResourceDto>()
+            .Map(dest => dest.Resource, src => src.Resource.Adapt<ResourceDto>())
+            .Map(dest => dest.UnitOfMeasure, src => src.UnitOfMeasure.Adapt<UnitDto>());
+
+        config.NewConfig<ReceiptDocument, ReceiptDocumentUpdateDto>()
+            .Map(dest => dest.Date, src => src.Date.ToDateTime(TimeOnly.MinValue))
+            .Map(dest => dest.ReceiptResources, src => src.ReceiptResources.Adapt<List<ReceiptResourceUpdateDto>>());
+
+        config.NewConfig<ReceiptResource, ReceiptResourceUpdateDto>();
+
+        config.NewConfig<ShipmentDocument, ShipmentDocumentDto>()
+            .Map(dest => dest.Date, src => src.Date.ToDateTime(TimeOnly.MinValue))
+            .Map(dest => dest.ShipmentResources, src => src.ShipmentResources.Adapt<List<ShipmentResourceDto>>());
+
+        config.NewConfig<ShipmentResource, ShipmentResourceDto>()
+            .Map(dest => dest.Resource, src => src.Resource.Adapt<ResourceDto>())
+            .Map(dest => dest.UnitOfMeasure, src => src.UnitOfMeasure.Adapt<UnitDto>());
 
         config.NewConfig<ResourceDto, Resource>();
         config.NewConfig<Resource, ResourceDto>();

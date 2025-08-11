@@ -20,17 +20,32 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
 #nullable restore
     }
 
+    private IQueryable<ReceiptDocument> GetQueryWithoutThenIncludes()
+        => DbSet.AsNoTracking().Include(x => x.ReceiptResources);
+
+    public override async Task<ReceiptDocument?> GetByAsync(int id, CancellationToken ct = default)
+    {
+        IQueryable<ReceiptDocument> query = GetQueryWithoutThenIncludes();
+        return await query.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
+    }
+
     public async Task<List<ReceiptDocument>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
         IQueryable<ReceiptDocument> query = GetQuery();
 
         if (filter.Resources is not null && filter.Resources.Count > 0)
             query = query.Where(x => x.ReceiptResources != null &&
-                                    x.ReceiptResources.Any(rr => filter.Resources.Contains(rr.Resource.Name)));
+                            x.ReceiptResources.Any(rr =>
+                                rr != null &&
+                                rr.Resource != null &&
+                                filter.Resources.Contains(rr.Resource.Name)));
 
         if (filter.UnitsOfMeasure is not null && filter.UnitsOfMeasure.Count > 0)
             query = query.Where(x => x.ReceiptResources != null &&
-                                    x.ReceiptResources.Any(rr => filter.UnitsOfMeasure.Contains(rr.UnitOfMeasure.Name)));
+                            x.ReceiptResources.Any(rr =>
+                                rr != null &&
+                                rr.UnitOfMeasure != null &&
+                                filter.UnitsOfMeasure.Contains(rr.UnitOfMeasure.Name)));
 
         if (filter.Numbers is not null && filter.Numbers.Count > 0)
             query = query.Where(x => filter.Numbers.Any(s => s == x.Number));
@@ -43,7 +58,7 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
         return await query.ToListAsync(ct);
     }
 
-    public async Task<ReceiptDocument?> GetByNumber(string number, CancellationToken ct = default)
+    public async Task<ReceiptDocument?> GetByNumberAsync(string number, CancellationToken ct = default)
     {
         IQueryable<ReceiptDocument> query = GetQuery();
         return await query.Where(x => x.Number.ToLower() == number.ToLower()).FirstOrDefaultAsync(ct);

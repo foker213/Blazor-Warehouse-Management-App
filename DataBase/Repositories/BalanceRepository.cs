@@ -16,6 +16,11 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
             .Include(x => x.Resource);
     }
 
+    private IQueryable<Balance> GetQueryWithoutIncludes()
+    {
+        return DbSet.AsNoTracking();
+    }
+
     public async Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
         IQueryable<Balance> query = GetQuery();
@@ -29,10 +34,10 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
         return await query.ToListAsync(ct);
     }
 
-    public async Task<Balance?> GetByResourceIdAndUnitId(int resourceId, int unitId, CancellationToken ct = default)
+    public async Task<Balance?> GetByIdsAsync(int resourceId, int unitId, CancellationToken ct = default)
     {
-        IQueryable<Balance> query = GetQuery();
-        return await query.Where(x => x.ResourceId == resourceId && x.UnitOfMeasureId == unitId).FirstOrDefaultAsync(ct);
+        IQueryable<Balance> query = GetQueryWithoutIncludes();
+        return await query.FirstOrDefaultAsync(x => x.ResourceId == resourceId && x.UnitOfMeasureId == unitId);
     }
 
     public void Add(Balance document)

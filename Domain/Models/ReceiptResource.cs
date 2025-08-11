@@ -7,13 +7,13 @@ public class ReceiptResource : Entity
     /// <summary>
     /// Прикрепленный ресурс
     /// </summary>
-    public Resource Resource { get; private set; } = default!;
+    public Resource? Resource { get; private set; } = default!;
     public int ResourceId { get; private set; }
 
     /// <summary>
     /// Прикрепленная единица измерения
     /// </summary>
-    public UnitOfMeasure UnitOfMeasure { get; private set; } = default!;
+    public UnitOfMeasure? UnitOfMeasure { get; private set; } = default!;
     public int UnitOfMeasureId { get; private set; }
 
     /// <summary>
@@ -28,7 +28,7 @@ public class ReceiptResource : Entity
     public ReceiptDocument ReceiptDocument { get; private set; } = default!;
     public int ReceiptDocumentId { get; private set; }
 
-    private int _oldQuantity;
+    private int _oldQuantity = 0;
 
     protected ReceiptResource() { }
 
@@ -36,20 +36,17 @@ public class ReceiptResource : Entity
         int resourceId,
         int unitId,
         int quantity,
-        ReceiptDocument document)
+        int documentId)
     {
         if (quantity <= 0)
             return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
-
-        if (document == null)
-            return Error.Validation("DocumentRequired", "Документ обязателен");
 
         return new ReceiptResource
         {
             ResourceId = resourceId,
             UnitOfMeasureId = unitId,
             Quantity = quantity,
-            ReceiptDocumentId = document.Id
+            ReceiptDocumentId = documentId
         };
     }
 

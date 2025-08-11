@@ -20,16 +20,16 @@ internal sealed class ReceiptResourceConfiguration : IEntityTypeConfiguration<Re
             .HasComment("Количество");
 
         builder.HasOne(x => x.Resource)
-            .WithOne(x => x.ReceiptResource)
-            .HasForeignKey<ReceiptResource>(x => x.ResourceId)
+            .WithMany(x => x.ReceiptResources)
+            .HasForeignKey(x => x.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.ResourceId)
             .HasComment("Прикрепленный ресурс");
 
         builder.HasOne(x => x.UnitOfMeasure)
-            .WithOne(x => x.ReceiptResource)
-            .HasForeignKey<ReceiptResource>(x => x.UnitOfMeasureId)
+            .WithMany(x => x.ReceiptResources)
+            .HasForeignKey(x => x.UnitOfMeasureId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.UnitOfMeasureId)

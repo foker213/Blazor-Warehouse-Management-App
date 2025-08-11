@@ -77,12 +77,12 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         await OnResourceUpdated.InvokeAsync();
-        _notification?.Show("Ресурс успешно обновлен!", false);
+        _notification?.ShowAsync("Ресурс успешно обновлен!", false);
 
         await Close();
     }

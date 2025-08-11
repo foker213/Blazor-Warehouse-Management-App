@@ -10,13 +10,13 @@ internal sealed class ClientRepository(WarehouseDbContext db) : Repository<Clien
     protected override IQueryable<Client> GetQuery()
     {
         return DbSet.AsNoTracking()
-            .Include(x => x.ShipmentDocument);
+            .Include(x => x.ShipmentDocuments);
     }
 
     public async Task<ErrorOr<Updated>> ChangeStateAsync(Client client, CancellationToken ct = default)
     {
         DbSet.Entry(client).Property(x => x.State).IsModified = true;
-        await db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         return new Updated();
     }
@@ -27,7 +27,7 @@ internal sealed class ClientRepository(WarehouseDbContext db) : Repository<Clien
 
         try
         {
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
             return new Deleted();
         }
         catch

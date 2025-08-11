@@ -3,33 +3,37 @@
 
 <Notification @ref="_notification" />
 
-<h3>Баланс</h3>
+<h3 class="mb-4 text-primary">Баланс</h3>
 
 <div class="mb-3">
     <div class="row">
         <div class="col-md-4">
-            <label>Ресурс</label>
-            <select class="form-select" @bind="_selectedResourceFilters" multiple>
+            <label class="form-label fw-bold text-muted">Ресурс</label>
+            <select class="form-select filter-select" @bind="_selectedResourceFilters" multiple>
                 @foreach (string resource in _availableResources)
                 {
-                    <option value="@resource">@resource</option>
+                    <option value="@resource" class="filter-option">@resource</option>
                 }
             </select>
             <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
         </div>
         <div class="col-md-4">
-            <label>Единица измерения</label>
-            <select class="form-select" @bind="_selectedUnitFilters" multiple>
+            <label class="form-label fw-bold text-muted">Единица измерения</label>
+            <select class="form-select filter-select" @bind="_selectedUnitFilters" multiple>
                 @foreach (string unit in _availableUnits)
                 {
-                    <option value="@unit">@unit</option>
+                    <option value="@unit" class="filter-option">@unit</option>
                 }
             </select>
             <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
         </div>
         <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-primary" @onclick="ApplyFilters">Применить</button>
-            <button class="btn btn-secondary" @onclick="ClearFilters">Сбросить</button>
+            <button class="btn btn-primary me-2 filter-btn" @onclick="ApplyFilters">
+                <i class="bi bi-funnel me-1"></i> Применить
+            </button>
+            <button class="btn btn-outline-secondary filter-btn" @onclick="ClearFilters">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить
+            </button>
         </div>
     </div>
 </div>
@@ -40,25 +44,40 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Ресурс</th>
-                <th>Единица измерения</th>
-                <th>Количество</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (BalanceDto item in _balanceItems)
-            {
+    <div class="table-responsive rounded-3 shadow-sm">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead class="bg-light">
                 <tr>
-                    <td>@item.Resource.Name</td>
-                    <td>@item.UnitOfMeasure.Name</td>
-                    <td>@item.Quantity</td>
+                    <th class="ps-4">Ресурс</th>
+                    <th>Единица измерения</th>
+                    <th class="text-end pe-4">Количество</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (BalanceDto item in _balanceItems)
+                {
+                    <tr class="position-relative">
+                        <td class="ps-4 fw-semibold">@item.Resource.Name</td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                @item.UnitOfMeasure.Name
+                            </span>
+                        </td>
+                        <td class="text-end pe-4 fw-bold">
+                            @if (item.Quantity > 0)
+                            {
+                                <span class="text-success">@item.Quantity</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">@item.Quantity</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
@@ -86,7 +105,7 @@ else
         }
         else
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
         }
 
         response = await Http.GetAsync(Routes.Units.Api);
@@ -97,7 +116,7 @@ else
         }
         else
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -107,7 +126,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
@@ -126,7 +145,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace WarehouseManagement.DataBase.Migrations
 {
     /// <inheritdoc />
-    public partial class Warhouse : Migration
+    public partial class Warehouse : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -189,14 +189,12 @@ namespace WarehouseManagement.DataBase.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Balances_ResourceId",
                 table: "Balances",
-                column: "ResourceId",
-                unique: true);
+                column: "ResourceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Balances_UnitOfMeasureId",
                 table: "Balances",
-                column: "UnitOfMeasureId",
-                unique: true);
+                column: "UnitOfMeasureId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReceiptResources_ReceiptDocumentId",
@@ -206,26 +204,22 @@ namespace WarehouseManagement.DataBase.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ReceiptResources_ResourceId",
                 table: "ReceiptResources",
-                column: "ResourceId",
-                unique: true);
+                column: "ResourceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReceiptResources_UnitOfMeasureId",
                 table: "ReceiptResources",
-                column: "UnitOfMeasureId",
-                unique: true);
+                column: "UnitOfMeasureId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShipmentDocuments_ClientId",
                 table: "ShipmentDocuments",
-                column: "ClientId",
-                unique: true);
+                column: "ClientId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShipmentResources_ResourceId",
                 table: "ShipmentResources",
-                column: "ResourceId",
-                unique: true);
+                column: "ResourceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShipmentResources_ShipmentDocumentId",
@@ -235,8 +229,7 @@ namespace WarehouseManagement.DataBase.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ShipmentResources_UnitOfMeasureId",
                 table: "ShipmentResources",
-                column: "UnitOfMeasureId",
-                unique: true);
+                column: "UnitOfMeasureId");
         }
 
         /// <inheritdoc />

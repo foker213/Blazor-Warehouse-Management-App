@@ -42,7 +42,7 @@ public class Balance : Entity
     public ErrorOr<Success> ChangeQueantity(int quantity)
     {
         if (quantity < 0)
-            return Error.Validation("NegativeQuantity", "Количество не может быть отрицательным");
+            return Error.Validation("NegativeQuantity", $"На складе станет недостаточно выбранных ресурсов: {Resource.Name} в {UnitOfMeasure.Name}");
 
         Quantity = quantity;
         return Result.Success;

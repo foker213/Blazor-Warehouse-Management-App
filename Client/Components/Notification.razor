@@ -27,7 +27,7 @@
 
     private bool _isFadingOut = false;
 
-    public void Show(string message, bool isError = true)
+    public async Task ShowAsync(string message, bool isError = true)
     {
         if(isError)
         {
@@ -48,7 +48,7 @@
         IsVisible = true;
         StateHasChanged();
 
-        Task.Run(async () =>
+        await Task.Run(async () =>
         {
             await Task.Delay(3000);
             await Dismiss();
@@ -61,6 +61,7 @@
 
         _isFadingOut = true;
         StateHasChanged();
+        await Task.Delay(100);
         IsVisible = false;
         _isFadingOut = false;
         StateHasChanged();

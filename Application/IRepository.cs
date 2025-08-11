@@ -1,5 +1,4 @@
-﻿using ErrorOr;
-using WarehouseManagement.Domain;
+﻿using WarehouseManagement.Domain;
 
 namespace WarehouseManagement.Application;
 

@@ -10,14 +10,14 @@ internal sealed class ResourceRepository(WarehouseDbContext db) : Repository<Res
     protected override IQueryable<Resource> GetQuery()
     {
         return DbSet.AsNoTracking()
-            .Include(x => x.ReceiptResource)
-            .Include(x => x.ShipmentResource);
+            .Include(x => x.ReceiptResources)
+            .Include(x => x.ShipmentResources);
     }
 
     public async Task<ErrorOr<Updated>> ChangeStateAsync(Resource resource, CancellationToken ct = default)
     {
         DbSet.Entry(resource).Property(x => x.State).IsModified = true;
-        await db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         return new Updated();
     }
@@ -27,7 +27,7 @@ internal sealed class ResourceRepository(WarehouseDbContext db) : Repository<Res
         DbSet.Remove(resource);
         try
         {
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
             return new Deleted();
         }
         catch

@@ -39,7 +39,7 @@ public class ShipmentDocumentsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ShipmentDocumentDto shipment, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] ShipmentDocumentCreateDto shipment, CancellationToken ct = default)
     {
         var result = await _shipmentDocumentService.CreateAsync(shipment, ct);
 
@@ -52,25 +52,55 @@ public class ShipmentDocumentsController : ControllerBase
         if (result.IsError)
             return Problem(result.FirstError.Description);
 
-        return CreatedAtAction(nameof(GetById), new { id = shipment.Id }, shipment);
+        return NoContent();
     }
 
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] ShipmentDocumentDto shipment, CancellationToken ct = default)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, "Update operation is not yet implemented");
+        var result = await _shipmentDocumentService.UpdateAsync(shipment, ct);
+
+        if (result.IsError && result.FirstError.Type == ErrorType.Validation)
+            return BadRequest(result.FirstError.Description);
+
+        if (result.IsError && result.FirstError.Type == ErrorType.Conflict)
+            return Conflict(result.FirstError.Description);
+
+        if (result.IsError)
+            return Problem(result.FirstError.Description);
+
+        return NoContent();
     }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct = default)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, "Delete operation is not yet implemented");
+        var result = await _shipmentDocumentService.DeleteAsync(id, ct);
+
+        if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
+            return NotFound();
+
+        if (result.IsError)
+            return Problem(result.FirstError.Description);
+
+        return NoContent();
     }
 
     [HttpPatch("{id:int}/status")]
-    public async Task<IActionResult> ChangeStatus(int id, CancellationToken ct = default)
+    public async Task<IActionResult> ChangeStatus([FromBody] ShipmentDocumentDto shipment, CancellationToken ct = default)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, "ChangeStatus operation is not yet implemented");
+        var result = await _shipmentDocumentService.ChangeStatusAsync(shipment, ct);
+
+        if (result.IsError && result.FirstError.Type == ErrorType.Validation)
+            return BadRequest(result.FirstError.Description);
+
+        if (result.IsError && result.FirstError.Type == ErrorType.Conflict)
+            return Conflict(result.FirstError.Description);
+
+        if (result.IsError)
+            return Problem(result.FirstError.Description);
+
+        return NoContent();
     }
 
     [HttpPost("filter")]

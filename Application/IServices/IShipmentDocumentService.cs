@@ -6,11 +6,11 @@ namespace WarehouseManagement.Application.IServices;
 
 public interface IShipmentDocumentService
 {
-    Task<List<ShipmentDocumentDto>> GetAll(CancellationToken ct = default);
-    Task<ErrorOr<ShipmentDocumentDto>> GetBy(int id, CancellationToken ct = default);
-    Task<ErrorOr<Created>> CreateAsync(ShipmentDocumentDto shipment, CancellationToken ct = default);
-    Task<ErrorOr<Updated>> UpdateAsync(ShipmentDocumentDto shipment, CancellationToken ct = default);
-    Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct = default);
-    Task<ErrorOr<Updated>> ChangeStatusAsync(int id, CancellationToken ct = default);
-    Task<List<ShipmentDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct = default);
+    Task<List<ShipmentDocumentDto>> GetAll(CancellationToken ct);
+    Task<ErrorOr<ShipmentDocumentDto>> GetBy(int id, CancellationToken ct);
+    Task<ErrorOr<Created>> CreateAsync(ShipmentDocumentCreateDto shipment, CancellationToken ct);
+    Task<ErrorOr<Updated>> UpdateAsync(ShipmentDocumentDto shipment, CancellationToken ct);
+    Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct);
+    Task<ErrorOr<Updated>> ChangeStatusAsync(ShipmentDocumentDto shipment, CancellationToken ct);
+    Task<List<ShipmentDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct);
 } 

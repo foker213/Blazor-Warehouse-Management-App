@@ -4,7 +4,7 @@
 
 <Notification @ref="_notification" />
 
-<h3>Ресурсы</h3>
+<h3 class="mb-4 text-primary">Ресурсы</h3>
 
 <div class="mb-3">
     <button class="btn me-2 @(currentState == State.InWork ? "btn-primary" : "btn-secondary")" @onclick="() => LoadResources(State.InWork)">В работе</button>
@@ -18,27 +18,29 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Наименование</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var resource in resources)
-            {
+    <div class="table-responsive rounded-3 shadow-sm">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead class="bg-light">
                 <tr>
-                    <td>@resource.Name</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(resource.Id)">Редактировать</button>
-                        <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(resource.Id)">@(currentState == State.InWork ? "В архив" : "В работу")</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteResource(resource.Id)">Удалить</button>
-                    </td>
+                    <th class="ps-4">Наименование</th>
+                    <th class="text-end pe-4">Действия</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var resource in resources)
+                {
+                    <tr>
+                        <td class="ps-4 fw-semibold">@resource.Name</td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(resource.Id)">Редактировать</button>
+                            <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(resource.Id)">@(currentState == State.InWork ? "В архив" : "В работу")</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteResource(resource.Id)">Удалить</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 <ResourceCreate Show="@showCreateModal"
@@ -76,7 +78,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
@@ -96,7 +98,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
@@ -117,13 +119,13 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         await LoadResources(currentState);
 
-        _notification?.Show("Успешно!", false);
+        _notification?.ShowAsync("Успешно!", false);
     }
 
     private async Task DeleteResource(int id)
@@ -132,12 +134,12 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         await LoadResources(currentState);
 
-        _notification?.Show("Ресурс успешно удален!", false);
+        _notification?.ShowAsync("Ресурс успешно удален!", false);
     }
 }

@@ -9,16 +9,14 @@ internal sealed class UnitOfMeasureRepository(WarehouseDbContext db) : Repositor
 {
     protected override IQueryable<UnitOfMeasure> GetQuery()
     {
-#nullable disable
         return DbSet.AsNoTracking()
-            .Include(x => x.ReceiptResource)
-            .Include(x => x.ShipmentResource);
-#nullable restore
+            .Include(x => x.ReceiptResources)
+            .Include(x => x.ShipmentResources);
     }
     public async Task<ErrorOr<Updated>> ChangeStateAsync(UnitOfMeasure unit, CancellationToken ct = default)
     {
         DbSet.Entry(unit).Property(x => x.State).IsModified = true;
-        await db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         return new Updated();
     }
@@ -29,7 +27,7 @@ internal sealed class UnitOfMeasureRepository(WarehouseDbContext db) : Repositor
 
         try
         {
-            await db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
             return new Deleted();
         }
         catch

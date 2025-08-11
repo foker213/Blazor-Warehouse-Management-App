@@ -12,8 +12,8 @@ using WarehouseManagement.DataBase;
 namespace WarehouseManagement.DataBase.Migrations
 {
     [DbContext(typeof(WarehouseDbContext))]
-    [Migration("20250807125058_Warhouse")]
-    partial class Warhouse
+    [Migration("20250810122712_Warehouse")]
+    partial class Warehouse
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,11 +44,9 @@ namespace WarehouseManagement.DataBase.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ResourceId")
-                        .IsUnique();
+                    b.HasIndex("ResourceId");
 
-                    b.HasIndex("UnitOfMeasureId")
-                        .IsUnique();
+                    b.HasIndex("UnitOfMeasureId");
 
                     b.ToTable("Balances");
                 });
@@ -121,11 +119,9 @@ namespace WarehouseManagement.DataBase.Migrations
 
                     b.HasIndex("ReceiptDocumentId");
 
-                    b.HasIndex("ResourceId")
-                        .IsUnique();
+                    b.HasIndex("ResourceId");
 
-                    b.HasIndex("UnitOfMeasureId")
-                        .IsUnique();
+                    b.HasIndex("UnitOfMeasureId");
 
                     b.ToTable("ReceiptResources");
                 });
@@ -173,8 +169,7 @@ namespace WarehouseManagement.DataBase.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClientId")
-                        .IsUnique();
+                    b.HasIndex("ClientId");
 
                     b.ToTable("ShipmentDocuments");
                 });
@@ -201,13 +196,11 @@ namespace WarehouseManagement.DataBase.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ResourceId")
-                        .IsUnique();
+                    b.HasIndex("ResourceId");
 
                     b.HasIndex("ShipmentDocumentId");
 
-                    b.HasIndex("UnitOfMeasureId")
-                        .IsUnique();
+                    b.HasIndex("UnitOfMeasureId");
 
                     b.ToTable("ShipmentResources");
                 });
@@ -235,14 +228,14 @@ namespace WarehouseManagement.DataBase.Migrations
             modelBuilder.Entity("WarehouseManagement.Domain.Models.Balance", b =>
                 {
                     b.HasOne("WarehouseManagement.Domain.Models.Resource", "Resource")
-                        .WithOne("Balance")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.Balance", "ResourceId")
+                        .WithMany("Balances")
+                        .HasForeignKey("ResourceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("WarehouseManagement.Domain.Models.UnitOfMeasure", "UnitOfMeasure")
-                        .WithOne("Balance")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.Balance", "UnitOfMeasureId")
+                        .WithMany("Balances")
+                        .HasForeignKey("UnitOfMeasureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -260,14 +253,14 @@ namespace WarehouseManagement.DataBase.Migrations
                         .IsRequired();
 
                     b.HasOne("WarehouseManagement.Domain.Models.Resource", "Resource")
-                        .WithOne("ReceiptResource")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.ReceiptResource", "ResourceId")
+                        .WithMany("ReceiptResources")
+                        .HasForeignKey("ResourceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("WarehouseManagement.Domain.Models.UnitOfMeasure", "UnitOfMeasure")
-                        .WithOne("ReceiptResource")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.ReceiptResource", "UnitOfMeasureId")
+                        .WithMany("ReceiptResources")
+                        .HasForeignKey("UnitOfMeasureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -281,8 +274,8 @@ namespace WarehouseManagement.DataBase.Migrations
             modelBuilder.Entity("WarehouseManagement.Domain.Models.ShipmentDocument", b =>
                 {
                     b.HasOne("WarehouseManagement.Domain.Models.Client", "Client")
-                        .WithOne("ShipmentDocument")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.ShipmentDocument", "ClientId")
+                        .WithMany("ShipmentDocuments")
+                        .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -292,8 +285,8 @@ namespace WarehouseManagement.DataBase.Migrations
             modelBuilder.Entity("WarehouseManagement.Domain.Models.ShipmentResource", b =>
                 {
                     b.HasOne("WarehouseManagement.Domain.Models.Resource", "Resource")
-                        .WithOne("ShipmentResource")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.ShipmentResource", "ResourceId")
+                        .WithMany("ShipmentResources")
+                        .HasForeignKey("ResourceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -304,8 +297,8 @@ namespace WarehouseManagement.DataBase.Migrations
                         .IsRequired();
 
                     b.HasOne("WarehouseManagement.Domain.Models.UnitOfMeasure", "UnitOfMeasure")
-                        .WithOne("ShipmentResource")
-                        .HasForeignKey("WarehouseManagement.Domain.Models.ShipmentResource", "UnitOfMeasureId")
+                        .WithMany("ShipmentResources")
+                        .HasForeignKey("UnitOfMeasureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -318,7 +311,7 @@ namespace WarehouseManagement.DataBase.Migrations
 
             modelBuilder.Entity("WarehouseManagement.Domain.Models.Client", b =>
                 {
-                    b.Navigation("ShipmentDocument");
+                    b.Navigation("ShipmentDocuments");
                 });
 
             modelBuilder.Entity("WarehouseManagement.Domain.Models.ReceiptDocument", b =>
@@ -328,11 +321,11 @@ namespace WarehouseManagement.DataBase.Migrations
 
             modelBuilder.Entity("WarehouseManagement.Domain.Models.Resource", b =>
                 {
-                    b.Navigation("Balance");
+                    b.Navigation("Balances");
 
-                    b.Navigation("ReceiptResource");
+                    b.Navigation("ReceiptResources");
 
-                    b.Navigation("ShipmentResource");
+                    b.Navigation("ShipmentResources");
                 });
 
             modelBuilder.Entity("WarehouseManagement.Domain.Models.ShipmentDocument", b =>
@@ -342,11 +335,11 @@ namespace WarehouseManagement.DataBase.Migrations
 
             modelBuilder.Entity("WarehouseManagement.Domain.Models.UnitOfMeasure", b =>
                 {
-                    b.Navigation("Balance");
+                    b.Navigation("Balances");
 
-                    b.Navigation("ReceiptResource");
+                    b.Navigation("ReceiptResources");
 
-                    b.Navigation("ShipmentResource");
+                    b.Navigation("ShipmentResources");
                 });
 #pragma warning restore 612, 618
         }

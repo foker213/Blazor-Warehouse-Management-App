@@ -8,7 +8,7 @@
 
 <Notification @ref="_notification" />
 
-<h3>Единицы измерения</h3>
+<h3 class ="mb-4 text-primary">Единицы измерения</h3>
 
 <div class="mb-3">
     <button class="btn me-2 @(currentState == State.InWork ? "btn-primary" : "btn-secondary")" @onclick="() => LoadUnits(State.InWork)">В работе</button>
@@ -22,27 +22,29 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Наименование</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var unit in units)
-            {
+    <div class="table-responsive rounded-3 shadow-sm">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead class="bg-light">
                 <tr>
-                    <td>@unit.Name</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(unit.Id)">Редактировать</button>
-                        <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(unit.Id)">@(currentState == State.InWork ? "В архив" : "В работу")</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteUnit(unit.Id)">Удалить</button>
-                    </td>
+                    <th class="ps-4">Наименование</th>
+                    <th class="text-end pe-4">Действия</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var unit in units)
+                {
+                    <tr>
+                        <td class="ps-4 fw-semibold">@unit.Name</td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(unit.Id)">Редактировать</button>
+                            <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(unit.Id)">@(currentState == State.InWork ? "В архив" : "В работу")</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteUnit(unit.Id)">Удалить</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 <UnitCreate Show="@showCreateModal"
@@ -80,7 +82,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
         }
 
         List<UnitDto>? allUnits = await response.Content.ReadFromJsonAsync<List<UnitDto>>();
@@ -99,7 +101,7 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
@@ -120,11 +122,11 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
-        _notification?.Show("Успешно!", false);
+        _notification?.ShowAsync("Успешно!", false);
 
         await LoadUnits(currentState);
     }
@@ -135,11 +137,11 @@ else
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
-        _notification?.Show("Единица измерения была успешно удалена!", false);
+        _notification?.ShowAsync("Единица измерения была успешно удалена!", false);
 
         await LoadUnits(currentState);
     }

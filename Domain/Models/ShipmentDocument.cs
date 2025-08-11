@@ -1,4 +1,5 @@
-﻿using WarehouseManagement.Domain.Enums;
+﻿using ErrorOr;
+using WarehouseManagement.Domain.Enums;
 
 namespace WarehouseManagement.Domain.Models;
 
@@ -12,7 +13,7 @@ public class ShipmentDocument : Entity
     /// <summary>
     /// Прикрепленный клиент
     /// </summary>
-    public Client Client { get; private set; } = default!;
+    public Client? Client { get; private set; } = default!;
     public int ClientId { get; private set; }
 
     /// <summary>
@@ -25,10 +26,75 @@ public class ShipmentDocument : Entity
     /// </summary>
     public Status Status { get; private set; }
 
+    private readonly List<ShipmentResource> _shipmentResources = new();
+
     /// <summary>
     /// Прикрепленные ресурсы отгрузки
     /// </summary>
-    public List<ShipmentResource> ShipmentResources { get; private set; } = default!;
+    public IReadOnlyCollection<ShipmentResource> ShipmentResources => _shipmentResources.AsReadOnly();
 
     protected ShipmentDocument() { }
+
+    public static ErrorOr<ShipmentDocument> Create(string number, DateOnly date, int clientId, ShipmentDocument? existingDocument)
+    {
+        if (string.IsNullOrWhiteSpace(number))
+            return Error.Validation("NumberRequired", "Номер документа обязателен");
+
+        if (existingDocument is not null)
+            return Error.Validation("NumberDuplicate", "Документ с таким номером уже существует");
+
+        return new ShipmentDocument
+        {
+            Number = number,
+            Date = date,
+            ClientId = clientId,
+            Status = Status.NotSigned
+        };
+    }
+
+    public void Update(string number, DateOnly date, int clientId, bool isChangeStatus = false)
+    {
+        Number = number;
+        Date = date;
+        ClientId = clientId;
+        Client = null;
+        
+        if(isChangeStatus)
+            Status = Status == Status.NotSigned ? Status.Signed : Status.NotSigned;
+    }
+
+    public ErrorOr<Success> AddResource(int resourceId, int unitId, int quantity, int id = 0)
+    {
+        if (quantity <= 0)
+            return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
+
+        ShipmentResource? existingResource = _shipmentResources.FirstOrDefault(r =>
+            r.Id == id && r.Id != 0);
+
+        if (existingResource != null)
+        {
+            existingResource.ChangeQuantity(quantity);
+        }
+        else
+        {
+            ErrorOr<ShipmentResource> receiptResource = ShipmentResource.Create(resourceId, unitId, quantity, this.Id);
+            if (receiptResource.IsError)
+                return receiptResource.Errors;
+
+            _shipmentResources.Add(receiptResource.Value);
+        }
+
+        return Result.Success;
+    }
+
+    public void RemoveResources(List<ShipmentResource> deletingResources)
+    {
+        if (deletingResources is null || deletingResources.Count() == 0)
+            return;
+
+        foreach (ShipmentResource resource in deletingResources)
+        {
+            _shipmentResources.Remove(resource);
+        }
+    }
 }

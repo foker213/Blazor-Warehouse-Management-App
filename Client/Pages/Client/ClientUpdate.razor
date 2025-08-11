@@ -84,12 +84,12 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            _notification?.Show(await response.Content.ReadAsStringAsync());
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
             return;
         }
 
         await OnClientUpdated.InvokeAsync();
-        _notification?.Show("Клиент был успешно обновлен!", false);
+        _notification?.ShowAsync("Клиент был успешно обновлен!", false);
 
         await Close();
     }

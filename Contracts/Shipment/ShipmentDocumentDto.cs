@@ -11,4 +11,9 @@ public class ShipmentDocumentDto
     public DateTime Date { get; set; }
     public Status Status { get; set; }
     public required List<ShipmentResourceDto> ShipmentResources { get; set; }
+
+    public bool HasResources()
+    {
+        return ShipmentResources != null && ShipmentResources.Count > 0;
+    }
 }

@@ -1,5 +1,4 @@
-﻿using ErrorOr;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Application;
 using WarehouseManagement.Domain;
 
@@ -18,40 +17,35 @@ public abstract class Repository<T> : IRepository<T> where T : class, IEntity
 
     protected virtual IQueryable<T> GetQuery()
     {
-        return DbSet.AsNoTracking();
+        return DbSet.AsQueryable();
     }
-    public async Task<List<T>> GetAll(CancellationToken ct = default)
+    public async Task<List<T>> GetAllAsync(CancellationToken ct = default)
     {
         IQueryable<T> query = GetQuery();
         return await query.ToListAsync(ct);
     }
 
-    public virtual async Task<T?> GetBy(int id, CancellationToken ct = default)
+    public virtual async Task<T?> GetByAsync(int id, CancellationToken ct = default)
     {
         IQueryable<T> query = GetQuery();
         return await query.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
     }
-    public virtual async Task<ErrorOr<Created>> CreateAsync(T entity, CancellationToken ct = default)
+
+    public virtual async Task CreateAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Add(entity);
-
         await _db.SaveChangesAsync(ct);
-        return new Created();
     }
 
-    public virtual async Task<ErrorOr<Updated>> UpdateAsync(T entity, CancellationToken ct = default)
+    public virtual async Task UpdateAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Update(entity);
-
         await _db.SaveChangesAsync(ct);
-        return new Updated();
     }
 
-    public virtual async Task<ErrorOr<Deleted>> DeleteAsync(T entity, CancellationToken ct = default)
+    public virtual async Task DeleteAsync(T entity, CancellationToken ct = default)
     {
         DbSet.Remove(entity);
-
         await _db.SaveChangesAsync(ct);
-        return new Deleted();
     }
 }

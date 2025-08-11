@@ -24,8 +24,9 @@ internal sealed class ShipmentDocumentConfiguration : IEntityTypeConfiguration<S
             .HasComment("Дата отгрузки");
 
         builder.HasOne(x => x.Client)
-            .WithOne(x => x.ShipmentDocument)
-            .HasForeignKey<ShipmentDocument>(x => x.ClientId);
+            .WithMany(x => x.ShipmentDocuments)
+            .HasForeignKey(x => x.ClientId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.ClientId)
             .HasComment("Прикрепленный клиент");

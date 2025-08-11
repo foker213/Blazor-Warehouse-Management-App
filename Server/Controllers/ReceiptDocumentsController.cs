@@ -25,7 +25,7 @@ public class ReceiptDocumentsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<ReceiptDocumentDto>> GetById(int id, CancellationToken ct = default)
+    public async Task<ActionResult<ReceiptDocumentUpdateDto>> GetById(int id, CancellationToken ct = default)
     {
         var result = await _receiptDocumentService.GetBy(id, ct);
 
@@ -39,7 +39,7 @@ public class ReceiptDocumentsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ReceiptDocumentDto receipt, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] ReceiptDocumentCreateDto receipt, CancellationToken ct = default)
     {
         var result = await _receiptDocumentService.CreateAsync(receipt, ct);
 
@@ -52,11 +52,11 @@ public class ReceiptDocumentsController : ControllerBase
         if (result.IsError)
             return Problem(result.FirstError.Description);
 
-        return CreatedAtAction(nameof(GetById), new { id = receipt.Id }, receipt);
+        return NoContent();
     }
 
     [HttpPut]
-    public async Task<IActionResult> Update([FromBody] ReceiptDocumentDto receipt, CancellationToken ct = default)
+    public async Task<IActionResult> Update([FromBody] ReceiptDocumentUpdateDto receipt, CancellationToken ct = default)
     {
         var result = await _receiptDocumentService.UpdateAsync(receipt, ct);
 
