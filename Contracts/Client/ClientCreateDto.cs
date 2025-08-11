@@ -6,7 +6,7 @@ namespace WarehouseManagement.Contracts.Client;
 public class ClientCreateDto
 {
     [Required(ErrorMessage = "Наименование обязательно")]
-    [StringLength(40, MinimumLength = 5, ErrorMessage = "Наименование должно быть от 5 до 40 символов")]
+    [StringLength(40, ErrorMessage = "Наименование должно быть до 40 символов")]
     public string Name { get; set; } = default!;
 
     [Required(ErrorMessage = "Адресс должен быть заполнен")]

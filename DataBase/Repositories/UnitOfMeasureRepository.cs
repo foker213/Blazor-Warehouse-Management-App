@@ -1,5 +1,4 @@
-﻿using ErrorOr;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Domain.Models;
 
@@ -7,33 +6,21 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class UnitOfMeasureRepository(WarehouseDbContext db) : Repository<UnitOfMeasure>(db), IUnitOfMeasureRepository
 {
-    protected override IQueryable<UnitOfMeasure> GetQuery()
+    protected override IQueryable<UnitOfMeasure> GetQuery(bool isTracked = false)
     {
-        return DbSet.AsNoTracking()
-            .Include(x => x.ReceiptResources)
-            .Include(x => x.ShipmentResources);
+        if(isTracked)
+            return DbSet.AsQueryable()
+                .Include(x => x.ReceiptResources)
+                .Include(x => x.ShipmentResources);
+        else
+            return DbSet.AsNoTracking()
+                .Include(x => x.ReceiptResources)
+                .Include(x => x.ShipmentResources);
     }
-    public async Task<ErrorOr<Updated>> ChangeStateAsync(UnitOfMeasure unit, CancellationToken ct = default)
+    public async Task ChangeStateAsync(UnitOfMeasure unit, CancellationToken ct = default)
     {
         DbSet.Entry(unit).Property(x => x.State).IsModified = true;
         await _db.SaveChangesAsync();
-
-        return new Updated();
-    }
-
-    public override async Task<ErrorOr<Deleted>> DeleteAsync(UnitOfMeasure unit, CancellationToken ct = default)
-    {
-        DbSet.Remove(unit);
-
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-            return new Deleted();
-        }
-        catch
-        {
-            return Error.Failure("DeleteFailed", "Ошибка при удалении единицы измерения");
-        }
     }
 
     public async Task<UnitOfMeasure?> GetByName(string name, CancellationToken ct = default)

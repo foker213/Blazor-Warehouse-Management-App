@@ -50,8 +50,8 @@ else
                 OnClientCreated="@RefreshClients" />
 
 <ClientUpdate 
-    Show="@_showEditModal" 
-    ShowChanged="@((bool value) => _showEditModal = value)" 
+    Show="@_showUpdateModal" 
+    ShowChanged="@((bool value) => _showUpdateModal = value)" 
     Client="@_selectedClient" 
     OnClientUpdated="@RefreshClients" />
 
@@ -59,7 +59,7 @@ else
     private List<ClientDto>? _clients;
     private State _currentState = State.InWork;
     private bool _showCreateModal = false;
-    private bool _showEditModal = false;
+    private bool _showUpdateModal = false;
     private ClientUpdateDto? _selectedClient;
     private Notification? _notification;
 
@@ -114,7 +114,7 @@ else
             State = client.State
         };
 
-        _showEditModal = true;
+        _showUpdateModal = true;
     }
 
 

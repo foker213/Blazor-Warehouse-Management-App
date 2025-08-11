@@ -131,7 +131,7 @@
 
     private async Task LoadReceiptData()
     {
-        var response = await Http.GetFromJsonAsync<ReceiptDocumentUpdateDto>(Routes.Receipts.Api);
+        var response = await Http.GetFromJsonAsync<ReceiptDocumentUpdateDto>(Routes.Receipts.Api + $"/{ReceiptId}");
 
         if (response != null)
         {

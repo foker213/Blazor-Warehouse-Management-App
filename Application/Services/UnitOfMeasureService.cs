@@ -82,7 +82,9 @@ internal sealed class UnitOfMeasureService : IUnitOfMeasureService
         else
             resource.State = State.InWork;
 
-        return await _unitOfMeasureRepository.ChangeStateAsync(resource, ct);
+        await _unitOfMeasureRepository.ChangeStateAsync(resource, ct);
+
+        return Result.Updated;
     }
 
     private async Task<Error?> ValidateUnit(string name, CancellationToken ct, int id = 0)

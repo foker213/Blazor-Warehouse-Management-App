@@ -8,12 +8,20 @@ public class Balance : Entity
     /// Прикрепленный ресурс
     /// </summary>
     public Resource Resource { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленного ресурса
+    /// </summary>
     public int ResourceId { get; private set; }
 
     /// <summary>
     /// Прикрепленная единица измерения
     /// </summary>
     public UnitOfMeasure UnitOfMeasure { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленной единицы измерения
+    /// </summary>
     public int UnitOfMeasureId { get; private set; }
 
     /// <summary>
@@ -21,6 +29,9 @@ public class Balance : Entity
     /// </summary>
     public int Quantity { get; private set; }
 
+    /// <summary>
+    /// Проверка существования в базе
+    /// </summary>
     private bool _existInDb { get; set; } = true;
 
     protected Balance() { }
@@ -42,7 +53,7 @@ public class Balance : Entity
     public ErrorOr<Success> ChangeQueantity(int quantity)
     {
         if (quantity < 0)
-            return Error.Validation("NegativeQuantity", $"На складе станет недостаточно выбранных ресурсов: {Resource.Name} в {UnitOfMeasure.Name}");
+            return Error.Validation("NegativeQuantity", $"На складе станет недостаточно ресурсов");
 
         Quantity = quantity;
         return Result.Success;

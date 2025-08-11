@@ -1,6 +1,5 @@
 ﻿using ErrorOr;
 using Mapster;
-using System.IO.Pipelines;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Application.IServices;
 using WarehouseManagement.Contracts.Client;
@@ -18,14 +17,14 @@ internal sealed class ClientService : IClientService
         _clientRepository = clientRepository;
     }
 
-    public async Task<List<ClientDto>> GetAll(CancellationToken ct)
+    public async Task<List<ClientDto>> GetAllAsync(CancellationToken ct)
     {
         List<Client> items = await _clientRepository.GetAllAsync(ct);
 
         return items.Adapt<List<ClientDto>>();
     }
 
-    public async Task<ErrorOr<ClientDto>> GetBy(int id, CancellationToken ct)
+    public async Task<ErrorOr<ClientDto>> GetByAsync(int id, CancellationToken ct)
     {
         Client? client = await _clientRepository.GetByAsync(id, ct);
 
@@ -83,7 +82,9 @@ internal sealed class ClientService : IClientService
         else
             resource.State = State.InWork;
 
-        return await _clientRepository.ChangeStateAsync(resource, ct);
+        await _clientRepository.ChangeStateAsync(resource, ct);
+
+        return Result.Updated;
     }
 
     private async Task<Error?> ValidateClient(string name, CancellationToken ct, int id = 0)

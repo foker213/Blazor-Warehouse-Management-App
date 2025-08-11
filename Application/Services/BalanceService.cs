@@ -4,7 +4,6 @@ using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Application.IServices;
 using WarehouseManagement.Contracts;
 using WarehouseManagement.Contracts.Balance;
-using WarehouseManagement.Contracts.Receipt;
 using WarehouseManagement.Domain.Models;
 
 namespace WarehouseManagement.Application.Services;

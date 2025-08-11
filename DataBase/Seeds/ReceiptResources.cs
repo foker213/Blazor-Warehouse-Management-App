@@ -2,7 +2,7 @@
 
 namespace WarehouseManagement.DataBase.Seeds;
 
-internal sealed class ReceiptsResource
+internal sealed class ReceiptResources
 {
     public static List<ReceiptResource> Get()
     {

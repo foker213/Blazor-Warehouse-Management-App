@@ -3,6 +3,9 @@ using WarehouseManagement.Application.IServices;
 
 namespace WarehouseManagement.Application.Services;
 
+/// <summary>
+/// Сервис для соблюдения потокобезопасности
+/// </summary>
 internal sealed class SynchronizationService : ISynchronizationService
 {
     private static readonly ConcurrentDictionary<(int ResourceId, int UnitId), SemaphoreSlim> _locks = new();
@@ -43,7 +46,6 @@ internal sealed class SynchronizationService : ISynchronizationService
         {
             _semaphore.Release();
 
-            // Очищаем семафор из словаря, если больше нет ожидающих
             if (_semaphore.CurrentCount == 1)
             {
                 _dictionaryLock.Wait();

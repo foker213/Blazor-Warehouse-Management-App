@@ -8,23 +8,26 @@ public class ReceiptResource : Entity
     /// Прикрепленный ресурс
     /// </summary>
     public Resource? Resource { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленного ресурса
+    /// </summary>
     public int ResourceId { get; private set; }
 
     /// <summary>
     /// Прикрепленная единица измерения
     /// </summary>
     public UnitOfMeasure? UnitOfMeasure { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленной единицы измерения
+    /// </summary>
     public int UnitOfMeasureId { get; private set; }
 
     /// <summary>
     /// Количество
     /// </summary>
     public int Quantity { get; private set; }
-
-
-    /// <summary>
-    /// Количество
-    /// </summary>
     public ReceiptDocument ReceiptDocument { get; private set; } = default!;
     public int ReceiptDocumentId { get; private set; }
 
@@ -48,6 +51,13 @@ public class ReceiptResource : Entity
             Quantity = quantity,
             ReceiptDocumentId = documentId
         };
+    }
+
+    public void Update(int resourceId, int unitOfMeasureId, int quantity)
+    {
+        ResourceId = resourceId;
+        UnitOfMeasureId = unitOfMeasureId;
+        Quantity = quantity;
     }
 
     public void ChangeQuantity(int quantity)

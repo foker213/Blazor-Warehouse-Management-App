@@ -6,13 +6,13 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header" style="display: flex; justify-content: space-between">
-                <h5 class="modal-title">Добавление документа отгрузки</h5>
+                <h5 class="modal-title">Редактирование документа поступления</h5>
                 <button type="button" class="close" style="background: white; border: 0;" @onclick="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <EditForm Model="@Model" OnValidSubmit="@HandleSubmit">
+                <EditForm Model="@Model" @ref="formReference" OnValidSubmit="@(() => HandleSubmit(_actionType))">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
@@ -60,8 +60,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var resource in Model.ShipmentResources)
+                                @for (var i = 0; i < Model.ShipmentResources.Count; i++)
                                 {
+                                    var resource = Model.ShipmentResources[i];
                                     <tr>
                                         <td>
                                             <InputSelect class="form-select" @bind-Value="resource.ResourceId">
@@ -103,8 +104,18 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
-                        <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                        @if (Model.Status == Status.NotSigned)
+                        {
+                            <button type="submit" class="btn btn-primary" @onclick="@(() => _actionType = "save")">Сохранить</button>
+                            <button type="submit" class="btn btn-primary" @onclick="@(() => _actionType = "sign")">Сохранить и подписать</button>
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-primary" @onclick="@(() => _actionType = "save")">Сохранить</button>
+                            <button type="submit" class="btn btn-danger" @onclick="@(() => _actionType = "revoke")">Сохранить и отозвать</button>
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                        }
                     </div>
                 </EditForm>
             </div>
@@ -120,18 +131,41 @@
     public EventCallback<bool> ShowChanged { get; set; }
 
     [Parameter]
-    public EventCallback OnShipmentCreated { get; set; }
+    public EventCallback OnShipmentUpdated { get; set; }
 
-    private ShipmentDocumentCreateDto Model { get; set; } = new() { Date = DateTime.Now, Status = Status.NotSigned, ShipmentResources = new() };
+    [Parameter]
+    public int ShipmentId { get; set; }
+
+    private ShipmentDocumentUpdateDto Model { get; set; } = new();
     private List<ResourceDto>? _resources;
     private List<UnitDto>? _unitOfMeasures;
     private List<ClientDto>? _clients;
     private Notification? _notification;
 
+    private EditForm? formReference;
+    private string _actionType = "save";
+
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("Загружается");
         await LoadDictionaries();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Show && ShipmentId > 0)
+        {
+            await LoadShipmentData();
+        }
+    }
+
+    private async Task LoadShipmentData()
+    {
+        var response = await Http.GetFromJsonAsync<ShipmentDocumentUpdateDto>(Routes.Shipments.Api + $"/{ShipmentId}");
+
+        if (response != null)
+        {
+            Model = response;
+        }
     }
 
     private async Task LoadDictionaries()
@@ -147,16 +181,28 @@
 
     private void AddResource()
     {
-        Model.ShipmentResources.Add(new());
+        Model.ShipmentResources.Add(new ShipmentResourceUpdateDto());
     }
 
-    private void RemoveResource(ShipmentResourceCreateDto resource)
+    private void RemoveResource(ShipmentResourceUpdateDto resource)
     {
         Model.ShipmentResources.Remove(resource);
     }
 
-    private async Task HandleSubmit()
+    private async Task HandleSubmit(string actionType)
     {
+        if (Model.ShipmentResources.Count == 0)
+        {
+            _notification?.ShowAsync("Документ должен содержать хотя бы один ресурс");
+            return;
+        }
+
+        if (Model.ClientId == 0)
+        {
+            _notification?.ShowAsync("Клиент не выбран");
+            return;
+        }
+
         foreach (var resource in Model.ShipmentResources)
         {
             if (resource.ResourceId == 0)
@@ -172,13 +218,16 @@
             }
         }
 
-        if (Model.ClientId == 0)
-        {
-            _notification?.ShowAsync("Клиент не выбран");
-            return;
-        }
+        HttpResponseMessage response;
 
-        var response = await Http.PostAsJsonAsync(Routes.Shipments.Api, Model);
+        if (actionType == "save")
+        {
+            response = await Http.PutAsJsonAsync(Routes.Shipments.Api, Model);
+        }
+        else
+        {
+            response = await Http.PutAsJsonAsync(Routes.Shipments.Api + "/changestatus", Model);
+        }
 
         if (!response.IsSuccessStatusCode)
         {
@@ -186,10 +235,11 @@
             return;
         }
 
-        Model = new() { Date = DateTime.Now, Status = Status.NotSigned };
-        await OnShipmentCreated.InvokeAsync();
-
-        _notification?.ShowAsync("Документ был успешно создан!", false);
+        _notification?.ShowAsync(actionType == "save" ? "Документ успешно сохранен!" :
+            actionType == "sign" ? "Документ успешно подписан!" :
+            "Документ успешно отозван!",
+            false);
+        await OnShipmentUpdated.InvokeAsync();
         await Close();
     }
 

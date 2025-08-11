@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IClientService, ClientService>();
         services.AddScoped<IReceiptDocumentService, ReceiptDocumentService>();
+        services.AddScoped<IReceiptResourceService, ReceiptResourceService>();
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IShipmentDocumentService, ShipmentDocumentService>();
         services.AddScoped<IUnitOfMeasureService, UnitOfMeasureService>();

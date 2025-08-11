@@ -11,9 +11,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddDataBase(this IServiceCollection services, IConfiguration configuration)
     {
+        // configuration DbContext
         services.AddDbContext<WarehouseDbContext>(options =>
             options.UseNpgsql(configuration["DbContext:ConnectionString"]));
 
+        // configuration services
         services.AddScoped<IBalanceRepository, BalanceRepository>();
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IReceiptDocumentRepository, ReceiptDocumentRepository>();

@@ -6,5 +6,4 @@ public interface IEntity
     /// Идентификатор
     /// </summary>
     public int Id { get; set; }
-
 }

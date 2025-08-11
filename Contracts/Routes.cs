@@ -6,11 +6,6 @@ public static class Routes
     {
         public const string Base = "/balances";
         public const string Api = "/api/balance";
-
-        public static string GetById(int id) => $"{Api}/{id}";
-        public static string Create => Api;
-        public static string Update(int id) => $"{Api}/{id}";
-        public static string Delete(int id) => $"{Api}/{id}";
     }
 
     public static class Receipts

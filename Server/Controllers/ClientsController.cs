@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using WarehouseManagement.Application.IServices;
 using WarehouseManagement.Contracts;
 using WarehouseManagement.Contracts.Client;
-using WarehouseManagement.Contracts.Resource;
 
 namespace WarehouseManagement.Server.Controllers;
 
@@ -21,14 +20,14 @@ public class ClientsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<ClientDto>>> GetAll(CancellationToken ct = default)
     {
-        var clients = await _clientService.GetAll(ct);
+        var clients = await _clientService.GetAllAsync(ct);
         return Ok(clients);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ClientDto>> GetById(int id, CancellationToken ct = default)
     {
-        var result = await _clientService.GetBy(id, ct);
+        var result = await _clientService.GetByAsync(id, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
             return NotFound();

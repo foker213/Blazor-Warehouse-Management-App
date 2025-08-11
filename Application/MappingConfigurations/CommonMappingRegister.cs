@@ -21,6 +21,16 @@ public class CommonMappingRegister : IRegister
         config.NewConfig<ClientCreateDto, Resource>();
         config.NewConfig<ClientUpdateDto, Resource>();
 
+        config.NewConfig<ResourceDto, Resource>();
+        config.NewConfig<Resource, ResourceDto>();
+        config.NewConfig<ResourceCreateDto, Resource>();
+        config.NewConfig<ResourceUpdateDto, Resource>();
+
+        config.NewConfig<UnitDto, UnitOfMeasure>();
+        config.NewConfig<UnitOfMeasure, UnitDto>();
+        config.NewConfig<UnitCreateDto, Resource>();
+        config.NewConfig<UnitUpdateDto, Resource>();
+
         config.NewConfig<ReceiptDocument, ReceiptDocumentDto>()
             .Map(dest => dest.Date, src => src.Date.ToDateTime(TimeOnly.MinValue))
             .Map(dest => dest.ReceiptResources, src => src.ReceiptResources.Adapt<List<ReceiptResourceDto>>());
@@ -43,14 +53,10 @@ public class CommonMappingRegister : IRegister
             .Map(dest => dest.Resource, src => src.Resource.Adapt<ResourceDto>())
             .Map(dest => dest.UnitOfMeasure, src => src.UnitOfMeasure.Adapt<UnitDto>());
 
-        config.NewConfig<ResourceDto, Resource>();
-        config.NewConfig<Resource, ResourceDto>();
-        config.NewConfig<ResourceCreateDto, Resource>();
-        config.NewConfig<ResourceUpdateDto, Resource>();
+        config.NewConfig<ShipmentDocument, ShipmentDocumentUpdateDto>()
+            .Map(dest => dest.Date, src => src.Date.ToDateTime(TimeOnly.MinValue))
+            .Map(dest => dest.ShipmentResources, src => src.ShipmentResources.Adapt<List<ShipmentResourceUpdateDto>>());
 
-        config.NewConfig<UnitDto, UnitOfMeasure>();
-        config.NewConfig<UnitOfMeasure, UnitDto>();
-        config.NewConfig<UnitCreateDto, Resource>();
-        config.NewConfig<UnitUpdateDto, Resource>();
+        config.NewConfig<ShipmentResource, ShipmentResourceUpdateDto>();
     }
 }

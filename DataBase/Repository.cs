@@ -15,9 +15,12 @@ public abstract class Repository<T> : IRepository<T> where T : class, IEntity
 
     protected DbSet<T> DbSet => _db.Set<T>();
 
-    protected virtual IQueryable<T> GetQuery()
+    protected virtual IQueryable<T> GetQuery(bool isTracked = false)
     {
-        return DbSet.AsQueryable();
+        if (isTracked)
+            return DbSet.AsNoTracking();
+        else
+            return DbSet.AsQueryable();
     }
     public async Task<List<T>> GetAllAsync(CancellationToken ct = default)
     {

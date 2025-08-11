@@ -2,7 +2,7 @@
 
 namespace WarehouseManagement.DataBase.Seeds;
 
-internal sealed class ReceiptsDocument
+internal sealed class ReceiptDocuments
 {
     public static List<ReceiptDocument> Get()
     {

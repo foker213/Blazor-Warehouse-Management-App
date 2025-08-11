@@ -4,20 +4,30 @@ namespace WarehouseManagement.Domain.Models;
 
 public class ShipmentResource : Entity
 {
+    /// <summary>
+    /// Прикрепленный ресурс
+    /// </summary>
     public Resource Resource { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленного ресурса
+    /// </summary>
     public int ResourceId { get; set; }
 
     /// <summary>
     /// Прикрепленная единица измерения
     /// </summary>
     public UnitOfMeasure UnitOfMeasure { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленной единицы измерения
+    /// </summary>
     public int UnitOfMeasureId { get; private set; }
 
     /// <summary>
     /// Количество
     /// </summary>
     public int Quantity { get; private set; }
-
     public int ShipmentDocumentId { get; private set; }
     public ShipmentDocument? ShipmentDocument { get; private set; } = default!;
 

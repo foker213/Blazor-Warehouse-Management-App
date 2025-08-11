@@ -31,14 +31,14 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
         return items.Adapt<List<ShipmentDocumentDto>>();
     }
 
-    public async Task<ErrorOr<ShipmentDocumentDto>> GetBy(int id, CancellationToken ct)
+    public async Task<ErrorOr<ShipmentDocumentUpdateDto>> GetBy(int id, CancellationToken ct)
     {
         ShipmentDocument? shipmentDocument = await _documentRepository.GetByAsync(id, ct);
 
         if (shipmentDocument is null)
-            return ErrorOr<ShipmentDocumentDto>.From(new List<Error> { Error.NotFound() });
+            return ErrorOr<ShipmentDocumentUpdateDto>.From(new List<Error> { Error.NotFound() });
 
-        return shipmentDocument.Adapt<ShipmentDocumentDto>();
+        return shipmentDocument.Adapt<ShipmentDocumentUpdateDto>();
     }
 
     public async Task<ErrorOr<Created>> CreateAsync(ShipmentDocumentCreateDto shipment, CancellationToken ct)
@@ -61,7 +61,7 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
         return Result.Created;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(ShipmentDocumentDto shipment, CancellationToken ct)
+    public async Task<ErrorOr<Updated>> UpdateAsync(ShipmentDocumentUpdateDto shipment, CancellationToken ct)
     {
         ShipmentDocument? existingDocument = await _documentRepository.GetByAsync(shipment.Id, ct);
         if (existingDocument is null)
@@ -70,37 +70,53 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
         List<ShipmentResource> deletedShipmentResources = new();
         List<Balance> balances = new();
 
-        existingDocument.Update(shipment.Number, DateOnly.FromDateTime(shipment.Date), shipment.Client.Id);
+        existingDocument.Update(shipment.Number, DateOnly.FromDateTime(shipment.Date), shipment.ClientId);
 
         deletedShipmentResources = existingDocument.ShipmentResources.Where(r => !shipment.ShipmentResources.Any(k =>
-                    k.Id == r.Id && k.Id != 0))
+                    k.Id == r.Id && k.Id != 0 && k.UnitOfMeasureId == r.UnitOfMeasureId && k.ResourceId == r.ResourceId))
                     .ToList();
 
         existingDocument.RemoveResources(deletedShipmentResources);
 
-        foreach (ShipmentResourceDto shipmentResource in shipment.ShipmentResources)
+        foreach (ShipmentResourceUpdateDto shipmentResource in shipment.ShipmentResources)
         {
-            existingDocument.AddResource(shipmentResource.Resource.Id, shipmentResource.UnitOfMeasure.Id, shipmentResource.Quantity, shipmentResource.Id);
+            ErrorOr<ShipmentResource> resource = existingDocument.AddResource(shipmentResource.ResourceId, shipmentResource.UnitOfMeasureId, shipmentResource.Quantity, shipmentResource.Id);
 
             if (existingDocument.Status == Status.Signed)
             {
-                Balance? balance = await _balanceRepository.GetByIdsAsync(shipmentResource.Resource.Id, shipmentResource.UnitOfMeasure.Id, ct);
+                Balance? balance = await _balanceRepository.GetByIdsAsync(shipmentResource.ResourceId, shipmentResource.UnitOfMeasureId, ct);
 
                 if (balance is not null)
                 {
-                    int totalQuantity = balance.Quantity - existingDocument.ShipmentResources.Last().RecalculateDifference();
+                    int totalQuantity;
+                    ErrorOr<Success> result;
 
-                    ErrorOr<Success> result = balance.ChangeQueantity(totalQuantity);
+                    Balance? addedBalance = balances.FirstOrDefault(x => x.ResourceId == shipmentResource.ResourceId &&
+                                                           x.UnitOfMeasureId == shipmentResource.UnitOfMeasureId);
 
-                    if (result.IsError)
-                        return result.Errors.First();
+                    if (addedBalance is not null)
+                    {
+                        totalQuantity = addedBalance.Quantity - resource.Value.RecalculateDifference();
+                        result = addedBalance.ChangeQueantity(totalQuantity);
 
-                    balances.Add(balance);
+                        if (result.IsError)
+                            return result.Errors.First();
+                    }
+                    else
+                    {
+                        totalQuantity = balance.Quantity - resource.Value.RecalculateDifference();
+                        result = balance.ChangeQueantity(totalQuantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+
+                        balances.Add(balance);
+                    }
                 }
                 else
                 {
                     return Error.Conflict("BalanceNotFound", 
-                        $"На складе станет недостаточно выбранных ресурсов: {shipmentResource.Resource.Name} в {shipmentResource.UnitOfMeasure.Name}");
+                        $"На складе станет недостаточно ресурсов");
                 }
             }
         }
@@ -118,12 +134,27 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
 
                 if (balance is not null)
                 {
-                    ErrorOr<Success> result = balance.Increase(shipmentResource.Quantity);
+                    ErrorOr<Success> result;
 
-                    if (result.IsError)
-                        return result.Errors.First();
+                    Balance? addedBalance = balances.FirstOrDefault(x => x.ResourceId == shipmentResource.ResourceId &&
+                                                           x.UnitOfMeasureId == shipmentResource.UnitOfMeasureId);
 
-                    balances.Add(balance);
+                    if (addedBalance is not null)
+                    {
+                        result = addedBalance.Increase(shipmentResource.Quantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+                    }
+                    else
+                    {
+                        result = balance.Increase(shipmentResource.Quantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+
+                        balances.Add(balance);
+                    }
                 }
             }
 
@@ -179,14 +210,30 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
 
             if (balance is not null)
             {
-                int totalQuantity = balance.Quantity + shipmentResource.Quantity;
+                int totalQuantity;
+                ErrorOr<Success> result;
 
-                ErrorOr<Success> result = balance.ChangeQueantity(totalQuantity);
+                Balance? addedBalance = balances.FirstOrDefault(x => x.ResourceId == shipmentResource.ResourceId &&
+                                                       x.UnitOfMeasureId == shipmentResource.UnitOfMeasureId);
 
-                if (result.IsError)
-                    return result.Errors.First();
+                if (addedBalance is not null)
+                {
+                    totalQuantity = addedBalance.Quantity + shipmentResource.Quantity;
+                    result = addedBalance.ChangeQueantity(totalQuantity);
 
-                balances.Add(balance);
+                    if (result.IsError)
+                        return result.Errors.First();
+                }
+                else
+                {
+                    totalQuantity = balance.Quantity + shipmentResource.Quantity;
+                    result = balance.ChangeQueantity(totalQuantity);
+
+                    if (result.IsError)
+                        return result.Errors.First();
+
+                    balances.Add(balance);
+                }
             }
         }
 
@@ -230,7 +277,7 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
         }
     }
 
-    public async Task<ErrorOr<Updated>> ChangeStatusAsync(ShipmentDocumentDto shipment, CancellationToken ct)
+    public async Task<ErrorOr<Updated>> ChangeStatusAsync(ShipmentDocumentUpdateDto shipment, CancellationToken ct)
     {
         ShipmentDocument? existingDocument = await _documentRepository.GetByAsync(shipment.Id, ct);
         if (existingDocument is null)
@@ -239,51 +286,85 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
         List<ShipmentResource> deletedShipmentResources = new();
         List<Balance> balances = new();
 
-        existingDocument.Update(shipment.Number, DateOnly.FromDateTime(shipment.Date), shipment.Client.Id, true);
+        existingDocument.Update(shipment.Number, DateOnly.FromDateTime(shipment.Date), shipment.ClientId, true);
 
         deletedShipmentResources = existingDocument.ShipmentResources.Where(r => !shipment.ShipmentResources.Any(k =>
-                    k.Id == r.Id && k.Id != 0))
+                    k.Id == r.Id && k.Id != 0 && k.UnitOfMeasureId == r.UnitOfMeasureId && k.ResourceId == r.UnitOfMeasureId))
                     .ToList();
 
         existingDocument.RemoveResources(deletedShipmentResources);
 
-        foreach (ShipmentResourceDto shipmentResource in shipment.ShipmentResources)
+        foreach (ShipmentResourceUpdateDto shipmentResource in shipment.ShipmentResources)
         {
-            existingDocument.AddResource(shipmentResource.Resource.Id, shipmentResource.UnitOfMeasure.Id, shipmentResource.Quantity, shipmentResource.Id);
+            ErrorOr<ShipmentResource> resource = existingDocument.AddResource(shipmentResource.ResourceId, shipmentResource.UnitOfMeasureId, shipmentResource.Quantity, shipmentResource.Id);
 
-            Balance? balance = await _balanceRepository.GetByIdsAsync(shipmentResource.Resource.Id, shipmentResource.UnitOfMeasure.Id, ct);
+            Balance? balance = await _balanceRepository.GetByIdsAsync(shipmentResource.ResourceId, shipmentResource.UnitOfMeasureId, ct);
 
             if (existingDocument.Status == Status.Signed)
             {
                 if (balance is not null && balance.Quantity != 0)
                 {
-                    int totalQuantity = balance.Quantity - existingDocument.ShipmentResources.Last().Quantity;
+                    int totalQuantity;
+                    ErrorOr<Success> result;
 
-                    ErrorOr<Success> result = balance.ChangeQueantity(totalQuantity);
+                    Balance? addedBalance = balances.FirstOrDefault(x => x.ResourceId == shipmentResource.ResourceId &&
+                                                           x.UnitOfMeasureId == shipmentResource.UnitOfMeasureId);
 
-                    if (result.IsError)
-                        return result.Errors.First();
+                    if (addedBalance is not null)
+                    {
+                        totalQuantity = addedBalance.Quantity - resource.Value.Quantity;
+                        result = addedBalance.ChangeQueantity(totalQuantity);
 
-                    balances.Add(balance);
+                        if (result.IsError)
+                            return result.Errors.First();
+                    }
+                    else
+                    {
+                        totalQuantity = balance.Quantity - resource.Value.Quantity;
+
+                        result = balance.ChangeQueantity(totalQuantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+
+                        balances.Add(balance);
+                    }
                 }
                 else
                 {
                     return Error.Conflict("BalanceNotFound",
-                        $"На складе станет недостаточно выбранных ресурсов: {shipmentResource.Resource.Name} в {shipmentResource.UnitOfMeasure.Name}");
+                        $"На складе станет недостаточно ресурсов");
                 }
             }
             else
             {
                 if (balance is not null && balance.Quantity != 0)
                 {
-                    int totalQuantity = balance.Quantity + existingDocument.ShipmentResources.Last().Quantity;
+                    int totalQuantity;
+                    ErrorOr<Success> result;
 
-                    ErrorOr<Success> result = balance.ChangeQueantity(totalQuantity);
+                    Balance? addedBalance = balances.FirstOrDefault(x => x.ResourceId == shipmentResource.ResourceId &&
+                                                           x.UnitOfMeasureId == shipmentResource.UnitOfMeasureId);
 
-                    if (result.IsError)
-                        return result.Errors.First();
+                    if (addedBalance is not null)
+                    {
+                        totalQuantity = addedBalance.Quantity + resource.Value.Quantity;
+                        result = addedBalance.ChangeQueantity(totalQuantity);
 
-                    balances.Add(balance);
+                        if (result.IsError)
+                            return result.Errors.First();
+                    }
+                    else
+                    {
+                        totalQuantity = balance.Quantity + resource.Value.Quantity;
+
+                        result = balance.ChangeQueantity(totalQuantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+
+                        balances.Add(balance);
+                    }
                 }
             }
         }
@@ -296,12 +377,27 @@ internal sealed class ShipmentDocumentService : IShipmentDocumentService
             {
                 if (balance is not null)
                 {
-                    ErrorOr<Success> result = balance.Increase(shipmentResource.Quantity);
+                    ErrorOr<Success> result;
 
-                    if (result.IsError)
-                        return result.Errors.First();
+                    Balance? addedBalance = balances.FirstOrDefault(x => x.ResourceId == shipmentResource.ResourceId &&
+                                                           x.UnitOfMeasureId == shipmentResource.UnitOfMeasureId);
 
-                    balances.Add(balance);
+                    if (addedBalance is not null)
+                    {
+                        result = addedBalance.Increase(shipmentResource.Quantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+                    }
+                    else
+                    {
+                        result = balance.Increase(shipmentResource.Quantity);
+
+                        if (result.IsError)
+                            return result.Errors.First();
+
+                        balances.Add(balance);
+                    }
                 }
             }
         }

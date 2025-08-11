@@ -43,7 +43,6 @@ public class WarehouseDbContext : DbContext, IUnitOfWork
         catch
         {
             await RollbackTransactionAsync(cancellationToken);
-
             return Error.Failure("OperationFailed", "Не удалось выполнить операцию");
         }
     }

@@ -49,9 +49,9 @@ public sealed class Seeder
 
         if (!db.Set<ReceiptDocument>().Any())
         {
-            logger.LogInformation("Seeding receipts document...");
+            logger.LogInformation("Seeding receipt documents...");
 
-            foreach (var el in ReceiptsDocument.Get())
+            foreach (var el in ReceiptDocuments.Get())
                 db.Add(el);
         }
 
@@ -59,17 +59,17 @@ public sealed class Seeder
 
         if (!db.Set<ReceiptResource>().Any())
         {
-            logger.LogInformation("Seeding receipts resource...");
+            logger.LogInformation("Seeding receipt resources...");
 
-            foreach (var el in ReceiptsResource.Get())
+            foreach (var el in ReceiptResources.Get())
                 db.Add(el);
         }
 
         if (!db.Set<ShipmentDocument>().Any())
         {
-            logger.LogInformation("Seeding shipments document...");
+            logger.LogInformation("Seeding shipment documents...");
 
-            foreach (var el in ShipmentsDocument.Get())
+            foreach (var el in ShipmentDocuments.Get())
                 db.Add(el);
         }
 
@@ -77,9 +77,9 @@ public sealed class Seeder
 
         if (!db.Set<ShipmentResource>().Any())
         {
-            logger.LogInformation("Seeding shipments resource...");
+            logger.LogInformation("Seeding shipment resources...");
 
-            foreach (var el in ShipmentsResource.Get())
+            foreach (var el in ShipmentResources.Get())
                 db.Add(el);
         }
 

@@ -1,5 +1,4 @@
-﻿using ErrorOr;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Domain.Models;
 
@@ -7,33 +6,22 @@ namespace WarehouseManagement.DataBase.Repositories;
 
 internal sealed class ResourceRepository(WarehouseDbContext db) : Repository<Resource>(db), IResourceRepository
 {
-    protected override IQueryable<Resource> GetQuery()
+    protected override IQueryable<Resource> GetQuery(bool isTracked = false)
     {
-        return DbSet.AsNoTracking()
-            .Include(x => x.ReceiptResources)
-            .Include(x => x.ShipmentResources);
+        if (isTracked)
+            return DbSet.AsQueryable()
+                .Include(x => x.ReceiptResources)
+                .Include(x => x.ShipmentResources);
+        else
+            return DbSet.AsNoTracking()
+                .Include(x => x.ReceiptResources)
+                .Include(x => x.ShipmentResources);
     }
 
-    public async Task<ErrorOr<Updated>> ChangeStateAsync(Resource resource, CancellationToken ct = default)
+    public async Task ChangeStateAsync(Resource resource, CancellationToken ct = default)
     {
         DbSet.Entry(resource).Property(x => x.State).IsModified = true;
-        await _db.SaveChangesAsync();
-
-        return new Updated();
-    }
-
-    public override async Task<ErrorOr<Deleted>> DeleteAsync(Resource resource, CancellationToken ct = default)
-    {
-        DbSet.Remove(resource);
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-            return new Deleted();
-        }
-        catch
-        {
-            return Error.Failure("DeleteFailed", "Ошибка при удалении ресурса");
-        }
+        await _db.SaveChangesAsync();;
     }
 
     public async Task<Resource?> GetByName(string name, CancellationToken ct = default)

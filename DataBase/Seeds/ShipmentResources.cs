@@ -2,7 +2,7 @@
 
 namespace WarehouseManagement.DataBase.Seeds;
 
-internal sealed class ShipmentsResource
+internal sealed class ShipmentResources
 {
     public static List<ShipmentResource> Get() {
         var resources = new List<ShipmentResource>();

@@ -83,7 +83,9 @@ internal sealed class ResourceService : IResourceService
         else
             resource.State = State.InWork;
 
-        return await _resourceRepository.ChangeStateAsync(resource, ct);
+        await _resourceRepository.ChangeStateAsync(resource, ct);
+
+        return Result.Updated;
     }
 
     private async Task<Error?> ValidateResource(string name, CancellationToken ct, int id = 0)

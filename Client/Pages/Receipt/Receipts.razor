@@ -5,6 +5,59 @@
 
 <h3 class="mb-4 text-primary">Документы поступления</h3>
 
+<div class="mb-3">
+    <div class="row">
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Ресурс</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedResourceFilters" multiple>
+                @foreach (var resource in _availableResources)
+                {
+                    <option value="@resource" class="filter-option">@resource</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Единицы</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedUnitFilters" multiple>
+                @foreach (var unit in _availableUnits)
+                {
+                    <option value="@unit" class="filter-option">@unit</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Номера</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedNumberFilters" multiple>
+                @foreach (var number in _availableNumbers)
+                {
+                    <option value="@number" class="filter-option">@number</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted small">Дата от</label>
+            <input type="date" class="form-control form-control-sm" @bind="_dateStartFilter" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted small">Дата до</label>
+            <input type="date" class="form-control form-control-sm" @bind="_dateEndFilter" />
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-12 d-flex justify-content-end">
+            <button class="btn btn-primary me-2 filter-btn" @onclick="ApplyFilters">
+                <i class="bi bi-funnel me-1"></i> Применить
+            </button>
+            <button class="btn btn-outline-secondary filter-btn" @onclick="ClearFilters">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="mb-4">
     <button class="btn btn-success" @onclick="ShowCreateModal">
         <i class="bi bi-plus-circle me-1"></i> Добавить
@@ -97,18 +150,73 @@ else
                ShowChanged="@((bool value) => _showCreateModal = value)"
                OnReceiptCreated="@RefreshDocuments" />
 
-<ReceiptUpdate Show="@_showEditModal"
-               ShowChanged="@((bool value) => _showEditModal = value)"
-               OnReceiptUpdated="@RefreshDocuments" />
+<ReceiptUpdate Show="@_showUpdateModal"
+               ShowChanged="@((bool value) => _showUpdateModal = value)"
+               OnReceiptUpdated="@RefreshDocuments" 
+               ReceiptId="@_openedDocumentId" />
 
 @code {
     private List<ReceiptDocumentDto>? _receiptDocuments;
     private bool _showCreateModal = false;
-    private bool _showEditModal = false;
+    private bool _showUpdateModal = false;
     private Notification? _notification;
+    private int _openedDocumentId;
+
+    private string[] _selectedResourceFilters = Array.Empty<string>();
+    private string[] _selectedUnitFilters = Array.Empty<string>();
+    private string[] _selectedNumberFilters = Array.Empty<string>();
+    private DateTime? _dateStartFilter;
+    private DateTime? _dateEndFilter;
+
+    private List<string> _availableResources = new();
+    private List<string> _availableUnits = new();
+    private List<string> _availableNumbers = new();
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadFilterOptions();
+        await RefreshDocuments();
+    }
+
+    private async Task LoadFilterOptions()
+    {
+        var resources = await Http.GetFromJsonAsync<List<ResourceDto>>(Routes.Resources.Api) ?? new();
+        var units = await Http.GetFromJsonAsync<List<UnitDto>>(Routes.Units.Api) ?? new();
+
+        _availableResources.AddRange(resources.Select(x => x.Name));
+        _availableUnits.AddRange(units.Select(x => x.Name));
+    }
+
+    private async Task ApplyFilters()
+    {
+        var filter = new FilterDto
+        {
+            Resources = _selectedResourceFilters.ToList(),
+            UnitsOfMeasure = _selectedUnitFilters.ToList(),
+            Numbers = _selectedNumberFilters.ToList(),
+            DateStart = _dateStartFilter.HasValue ? DateOnly.FromDateTime(_dateStartFilter.Value) : null,
+            DateEnd = _dateEndFilter.HasValue ? DateOnly.FromDateTime(_dateEndFilter.Value) : null
+        };
+
+        var response = await Http.PostAsJsonAsync($"{Routes.Receipts.Api}/filter", filter);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _receiptDocuments = await response.Content.ReadFromJsonAsync<List<ReceiptDocumentDto>>();
+    }
+
+    private async Task ClearFilters()
+    {
+        _selectedResourceFilters = Array.Empty<string>();
+        _selectedUnitFilters = Array.Empty<string>();
+        _selectedNumberFilters = Array.Empty<string>();
+        _dateStartFilter = null;
+        _dateEndFilter = null;
+
         await RefreshDocuments();
     }
 
@@ -122,7 +230,8 @@ else
             return;
         }
 
-        _receiptDocuments = await response.Content.ReadFromJsonAsync<List<ReceiptDocumentDto>>();
+        _receiptDocuments = await response.Content.ReadFromJsonAsync<List<ReceiptDocumentDto>>() ?? new();
+        _availableNumbers.AddRange(_receiptDocuments.Select(x => x.Number));
     }
 
     private void ShowCreateModal()
@@ -130,17 +239,10 @@ else
         _showCreateModal = true;
     }
 
-    private async Task ShowUpdateModal(int id)
+    private void ShowUpdateModal(int id)
     {
-        HttpResponseMessage response = await Http.GetAsync(Routes.TransformUrl(Routes.Receipts.Api, id));
-
-        if (!response.IsSuccessStatusCode)
-        {
-            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
-            return;
-        }
-
-        _showEditModal = true;
+        _openedDocumentId = id;
+        _showUpdateModal = true;
     }
 
     private async Task DeleteDocument(int id)

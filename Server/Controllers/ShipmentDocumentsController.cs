@@ -25,7 +25,7 @@ public class ShipmentDocumentsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<ShipmentDocumentDto>> GetById(int id, CancellationToken ct = default)
+    public async Task<ActionResult<ShipmentDocumentUpdateDto>> GetById(int id, CancellationToken ct = default)
     {
         var result = await _shipmentDocumentService.GetBy(id, ct);
 
@@ -56,7 +56,7 @@ public class ShipmentDocumentsController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<IActionResult> Update([FromBody] ShipmentDocumentDto shipment, CancellationToken ct = default)
+    public async Task<IActionResult> Update([FromBody] ShipmentDocumentUpdateDto shipment, CancellationToken ct = default)
     {
         var result = await _shipmentDocumentService.UpdateAsync(shipment, ct);
 
@@ -86,8 +86,8 @@ public class ShipmentDocumentsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("{id:int}/status")]
-    public async Task<IActionResult> ChangeStatus([FromBody] ShipmentDocumentDto shipment, CancellationToken ct = default)
+    [HttpPut("changestatus")]
+    public async Task<IActionResult> ChangeStatus([FromBody] ShipmentDocumentUpdateDto shipment, CancellationToken ct = default)
     {
         var result = await _shipmentDocumentService.ChangeStatusAsync(shipment, ct);
 

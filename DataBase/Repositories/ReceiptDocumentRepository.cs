@@ -9,23 +9,23 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
     Repository<ReceiptDocument>(db),
     IReceiptDocumentRepository
 {
-    protected override IQueryable<ReceiptDocument> GetQuery()
+    protected override IQueryable<ReceiptDocument> GetQuery(bool isTracked = false)
     {
+        if(isTracked)
+            return DbSet.AsQueryable().Include(x => x.ReceiptResources);
+        else
 #nullable disable
-        return DbSet.AsNoTracking()
-            .Include(x => x.ReceiptResources)
-                .ThenInclude(x => x.Resource)
-            .Include(x => x.ReceiptResources)
-                .ThenInclude(x => x.UnitOfMeasure);
+            return DbSet.AsNoTracking()
+                .Include(x => x.ReceiptResources)
+                    .ThenInclude(x => x.Resource)
+                .Include(x => x.ReceiptResources)
+                    .ThenInclude(x => x.UnitOfMeasure);
 #nullable restore
     }
 
-    private IQueryable<ReceiptDocument> GetQueryWithoutThenIncludes()
-        => DbSet.AsNoTracking().Include(x => x.ReceiptResources);
-
     public override async Task<ReceiptDocument?> GetByAsync(int id, CancellationToken ct = default)
     {
-        IQueryable<ReceiptDocument> query = GetQueryWithoutThenIncludes();
+        IQueryable<ReceiptDocument> query = GetQuery(true);
         return await query.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
     }
 
@@ -50,10 +50,14 @@ internal sealed class ReceiptDocumentRepository(WarehouseDbContext db) :
         if (filter.Numbers is not null && filter.Numbers.Count > 0)
             query = query.Where(x => filter.Numbers.Any(s => s == x.Number));
 
-        query = query.Where(x => x.Date >= filter.DateStart!.Value);
+        if (filter.DateStart is not null)
+            query = query.Where(x => x.Date >= filter.DateStart!.Value);
 
-        DateOnly endDate = filter.DateEnd!.Value.AddDays(1);
-        query = query.Where(x => x.Date < endDate);
+        if (filter.DateEnd is not null)
+        {
+            DateOnly endDate = filter.DateEnd!.Value.AddDays(1);
+            query = query.Where(x => x.Date < endDate);
+        }
 
         return await query.ToListAsync(ct);
     }

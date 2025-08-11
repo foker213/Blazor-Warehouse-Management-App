@@ -14,6 +14,10 @@ public class ShipmentDocument : Entity
     /// Прикрепленный клиент
     /// </summary>
     public Client? Client { get; private set; } = default!;
+
+    /// <summary>
+    /// Id прикрепленного клиента
+    /// </summary>
     public int ClientId { get; private set; }
 
     /// <summary>
@@ -22,7 +26,7 @@ public class ShipmentDocument : Entity
     public DateOnly Date { get; private set; }
 
     /// <summary>
-    /// Статус подписания
+    /// Статус отгрузки
     /// </summary>
     public Status Status { get; private set; }
 
@@ -63,7 +67,7 @@ public class ShipmentDocument : Entity
             Status = Status == Status.NotSigned ? Status.Signed : Status.NotSigned;
     }
 
-    public ErrorOr<Success> AddResource(int resourceId, int unitId, int quantity, int id = 0)
+    public ErrorOr<ShipmentResource> AddResource(int resourceId, int unitId, int quantity, int id = 0)
     {
         if (quantity <= 0)
             return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
@@ -81,10 +85,11 @@ public class ShipmentDocument : Entity
             if (receiptResource.IsError)
                 return receiptResource.Errors;
 
-            _shipmentResources.Add(receiptResource.Value);
+            existingResource = receiptResource.Value;
+            _shipmentResources.Add(existingResource);
         }
 
-        return Result.Success;
+        return existingResource;
     }
 
     public void RemoveResources(List<ShipmentResource> deletingResources)

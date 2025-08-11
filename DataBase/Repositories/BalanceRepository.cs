@@ -9,16 +9,14 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
     Repository<Balance>(db),
     IBalanceRepository
 {
-    protected override IQueryable<Balance> GetQuery()
+    protected override IQueryable<Balance> GetQuery(bool isTracked = false)
     {
-        return DbSet.AsNoTracking()
-            .Include(x => x.UnitOfMeasure)
-            .Include(x => x.Resource);
-    }
-
-    private IQueryable<Balance> GetQueryWithoutIncludes()
-    {
-        return DbSet.AsNoTracking();
+        if(isTracked)
+            return DbSet.AsNoTracking();
+        else
+            return DbSet.AsNoTracking()
+                .Include(x => x.UnitOfMeasure)
+                .Include(x => x.Resource);
     }
 
     public async Task<List<Balance>> FilterAsync(FilterDto filter, CancellationToken ct = default)
@@ -36,16 +34,23 @@ internal sealed class BalanceRepository(WarehouseDbContext db) :
 
     public async Task<Balance?> GetByIdsAsync(int resourceId, int unitId, CancellationToken ct = default)
     {
-        IQueryable<Balance> query = GetQueryWithoutIncludes();
+        IQueryable<Balance> query = GetQuery(true);
         return await query.FirstOrDefaultAsync(x => x.ResourceId == resourceId && x.UnitOfMeasureId == unitId);
     }
 
-    public void Add(Balance document)
-        => DbSet.Add(document);
+    public void Add(Balance balance)
+        => DbSet.Add(balance);
 
-    public void Update(Balance document)
-        => DbSet.Update(document);
+    public void Update(Balance balance)
+    {
+        var trackedEntity = DbSet.Local.FirstOrDefault(x => x.Id == balance.Id);
 
-    public void Remove(Balance document)
-        => DbSet.Remove(document);
+        if (trackedEntity != null)
+            _db.Entry(trackedEntity).CurrentValues.SetValues(balance);
+        else
+            DbSet.Update(balance);
+    }
+
+    public void Remove(Balance balance)
+        => DbSet.Remove(balance);
 }
