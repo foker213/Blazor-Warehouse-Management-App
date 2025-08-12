@@ -1,0 +1,166 @@
+﻿@attribute [Route(Routes.Balances.Base)]
+@inject HttpClient Http
+
+<Notification @ref="_notification" />
+
+<h3 class="mb-4 text-primary">Баланс</h3>
+
+<div class="mb-3">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label fw-bold text-muted">Ресурс</label>
+            <select class="form-select filter-select" @bind="_selectedResourceFilters" multiple>
+                @foreach (string resource in _availableResources)
+                {
+                    <option value="@resource" class="filter-option">@resource</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold text-muted">Единица измерения</label>
+            <select class="form-select filter-select" @bind="_selectedUnitFilters" multiple>
+                @foreach (string unit in _availableUnits)
+                {
+                    <option value="@unit" class="filter-option">@unit</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-primary me-2 filter-btn" @onclick="ApplyFilters">
+                <i class="bi bi-funnel me-1"></i> Применить
+            </button>
+            <button class="btn btn-outline-secondary filter-btn" @onclick="ClearFilters">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (_balanceItems == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <div class="table-responsive rounded-3 shadow-sm">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Ресурс</th>
+                    <th>Единица измерения</th>
+                    <th class="text-end pe-4">Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (BalanceDto item in _balanceItems)
+                {
+                    <tr class="position-relative">
+                        <td class="ps-4 fw-semibold">@item.Resource.Name</td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                @item.UnitOfMeasure.Name
+                            </span>
+                        </td>
+                        <td class="text-end pe-4 fw-bold">
+                            @if (item.Quantity > 0)
+                            {
+                                <span class="text-success">@item.Quantity</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">@item.Quantity</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<BalanceDto>? _balanceItems;
+    private Notification? _notification;
+
+    private string[] _selectedResourceFilters = Array.Empty<string>();
+    private string[] _selectedUnitFilters = Array.Empty<string>();
+    private List<string> _availableResources = new();
+    private List<string> _availableUnits = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFilters();
+        await LoadBalance();
+    }
+
+    private async Task LoadFilters()
+    {
+        HttpResponseMessage? response = await Http.GetAsync(Routes.Resources.Api);
+        if (response.IsSuccessStatusCode)
+        {
+            List<ResourceDto> resources = await response.Content.ReadFromJsonAsync<List<ResourceDto>>() ?? new();
+            _availableResources.AddRange(resources.Select(x => x.Name));
+        }
+        else
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+        }
+
+        response = await Http.GetAsync(Routes.Units.Api);
+        if (response.IsSuccessStatusCode)
+        {
+            List<UnitDto> units = await response.Content.ReadFromJsonAsync<List<UnitDto>>() ?? new();
+            _availableUnits.AddRange(units.Select(x => x.Name));
+        }
+        else
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+        }
+    }
+
+    private async Task LoadBalance()
+    {
+        HttpResponseMessage? response = await Http.GetAsync(Routes.Balances.Api);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _balanceItems = await response.Content.ReadFromJsonAsync<List<BalanceDto>>();
+    }
+
+    private async Task LoadBalanceWithFilters()
+    {
+        FilterDto filter = new()
+        {
+            Resources = _selectedResourceFilters.Any() ? _selectedResourceFilters.ToList() : null,
+            UnitsOfMeasure = _selectedUnitFilters.Any() ? _selectedUnitFilters.ToList() : null
+        };
+
+        HttpResponseMessage? response = await Http.PostAsJsonAsync(Routes.Balances.Api + "/filter", filter);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _balanceItems = await response.Content.ReadFromJsonAsync<List<BalanceDto>>();
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadBalanceWithFilters();
+    }
+
+    private async Task ClearFilters()
+    {
+        _selectedResourceFilters = Array.Empty<string>();
+        _selectedUnitFilters = Array.Empty<string>();
+        await LoadBalance();
+    }
+}

@@ -1,0 +1,176 @@
+﻿@inject HttpClient Http
+
+<Notification @ref="_notification" />
+
+<div class="modal @(Show ? "d-block" : "d-none")" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="display: flex; justify-content: space-between">
+                <h5 class="modal-title">Добавление документа поступления</h5>
+                <button type="button" class="close" style="background: white; border: 0;" @onclick="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@Model" OnValidSubmit="@HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-group mb-3">
+                        <label for="documentNumber">Номер документа</label>
+                        <InputText id="documentNumber" @bind-Value="Model.Number" class="form-control" />
+                        <ValidationMessage For="@(() => Model.Number)" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="documentDate">Дата</label>
+                        <InputDate id="documentDate" @bind-Value="Model.Date" class="form-control" />
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>Ресурсы</h5>
+                        <button type="button" class="btn btn-sm btn-primary" @onclick="AddResource">
+                            <i class="bi bi-plus-circle me-1"></i> Добавить ресурс
+                        </button>
+                    </div>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ресурс</th>
+                                    <th>Единица измерения</th>
+                                    <th>Количество</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var resource in Model.ReceiptResources)
+                                {
+                                    <tr>
+                                        <td>
+                                            <InputSelect class="form-select" @bind-Value="resource.ResourceId">
+                                                <option value="">Выберите ресурс</option>
+                                                @if (_resources != null)
+                                                {
+                                                    @foreach (var item in _resources)
+                                                    {
+                                                        <option value="@item.Id">@item.Name</option>
+                                                    }
+                                                }
+                                            </InputSelect>
+                                            <ValidationMessage For="@(() => resource.ResourceId)" />
+                                        </td>
+                                        <td>
+                                            <InputSelect class="form-select" @bind-Value="resource.UnitOfMeasureId">
+                                                <option value="">Выберите единицу измерения</option>
+                                                @if (_unitOfMeasures != null)
+                                                {
+                                                    @foreach (var item in _unitOfMeasures)
+                                                    {
+                                                        <option value="@item.Id">@item.Name</option>
+                                                    }
+                                                }
+                                            </InputSelect>
+                                            <ValidationMessage For="@(() => resource.UnitOfMeasureId)" />
+                                        </td>
+                                        <td>
+                                            <InputNumber @bind-Value="resource.Quantity" class="form-control" />
+                                            <ValidationMessage For="@(() => resource.Quantity)" />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => RemoveResource(resource)">Удалить</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Show { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ShowChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnReceiptCreated { get; set; }
+
+    private ReceiptDocumentCreateDto Model { get; set; } = new() { Date = DateTime.Now, Status = Status.NotSigned };
+    private List<ResourceDto>? _resources;
+    private List<UnitDto>? _unitOfMeasures;
+    private Notification? _notification;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Загружается");
+        await LoadDictionaries();
+    }
+
+    private async Task LoadDictionaries()
+    {
+        _resources = await Http.GetFromJsonAsync<List<ResourceDto>>(Routes.Resources.Api) ?? new();
+        _unitOfMeasures = await Http.GetFromJsonAsync<List<UnitDto>>(Routes.Units.Api) ?? new();
+
+        _resources = _resources.Where(x => x.State == State.InWork).ToList();
+        _unitOfMeasures = _unitOfMeasures.Where(x => x.State == State.InWork).ToList();
+    }
+
+    private void AddResource()
+    {
+        Model.ReceiptResources.Add(new ReceiptResourceCreateDto());
+    }
+
+    private void RemoveResource(ReceiptResourceCreateDto resource)
+    {
+        Model.ReceiptResources.Remove(resource);
+    }
+
+    private async Task HandleSubmit()
+    {
+        foreach (var resource in Model.ReceiptResources)
+        {
+            if (resource.ResourceId == 0)
+            {
+                _notification?.ShowAsync("Ресурс должен быть выбран");
+                return;
+            }
+
+            if (resource.UnitOfMeasureId == 0)
+            {
+                _notification?.ShowAsync("Для всех ресурсов должна быть выбрана единица измерения");
+                return;
+            }
+        }
+
+        var response = await Http.PostAsJsonAsync(Routes.Receipts.Api, Model);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        Model = new() { Date = DateTime.Now, Status = Status.NotSigned };
+        await OnReceiptCreated.InvokeAsync();
+
+        _notification?.ShowAsync("Документ был успешно создан!", false);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        await ShowChanged.InvokeAsync(false);
+    }
+}

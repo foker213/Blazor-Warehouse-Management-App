@@ -1,0 +1,36 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using WarehouseManagement.Domain.Models;
+
+namespace WarehouseManagement.DataBase.Configurations;
+
+internal sealed class BalanceConfiguration : IEntityTypeConfiguration<Balance>
+{
+    public void Configure(EntityTypeBuilder<Balance> builder)
+    {
+        builder.ToTable("Balances");
+
+        builder.HasKey(x => x.Id);
+
+        builder.Property(fw => fw.Id)
+            .ValueGeneratedOnAdd()
+            .HasComment("Идентификатор");
+
+        builder.HasOne(x => x.Resource)
+           .WithMany(x => x.Balances)
+           .HasForeignKey(x => x.ResourceId);
+
+        builder.Property(x => x.ResourceId)
+            .HasComment("Прикрепленный ресурс");
+
+        builder.HasOne(x => x.UnitOfMeasure)
+            .WithMany(x => x.Balances)
+            .HasForeignKey(x => x.UnitOfMeasureId);
+
+        builder.Property(x => x.UnitOfMeasureId)
+            .HasComment("Прикрепленная единица измерения");
+
+        builder.Property(x => x.Quantity)
+            .HasComment("Количество");
+    }
+}

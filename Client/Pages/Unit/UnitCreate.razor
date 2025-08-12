@@ -1,0 +1,71 @@
+﻿<Notification @ref="_notification" />
+
+<div class="modal @(Show ? "d-block" : "d-none")" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="display: flex; justify-content: space-between">
+                <h5 class="modal-title">Добавление единицы измерения</h5>
+                <button type="button" class="close" style="background: white; border: 0;" @onclick="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@Model" OnValidSubmit="@HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-group">
+                        <label for="unitName">Наименование</label>
+                        <InputText id="unitName" @bind-Value="Model.Name" class="form-control" />
+                        <ValidationMessage For="@(() => Model.Name)" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Отмена</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool Show { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ShowChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnUnitCreated { get; set; }
+
+    [Inject]
+    public HttpClient Http { get; set; } = null!;
+
+    private UnitCreateDto Model { get; set; } = new();
+    private Notification? _notification;
+
+    private async Task HandleSubmit()
+    {
+        var response = await Http.PostAsJsonAsync(Routes.Units.Api, Model);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        Model = new();
+        await OnUnitCreated.InvokeAsync();
+
+        _notification?.ShowAsync("Единица измерения была успешно создана!", false);
+
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        await ShowChanged.InvokeAsync(false);
+    }
+}

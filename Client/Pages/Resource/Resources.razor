@@ -1,0 +1,145 @@
+﻿@attribute [Route(Routes.Resources.Base)]
+
+@inject HttpClient Http
+
+<Notification @ref="_notification" />
+
+<h3 class="mb-4 text-primary">Ресурсы</h3>
+
+<div class="mb-3">
+    <button class="btn me-2 @(currentState == State.InWork ? "btn-primary" : "btn-secondary")" @onclick="() => LoadResources(State.InWork)">В работе</button>
+    <button class="btn me-2 @(currentState == State.InArchive ? "btn-primary" : "btn-secondary")" @onclick="() => LoadResources(State.InArchive)">Архив</button>
+    <button class="btn btn-success" @onclick="ShowCreateModal">Добавить</button>
+</div>
+
+@if (resources == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <div class="table-responsive rounded-3 shadow-sm">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Наименование</th>
+                    <th class="text-end pe-4">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var resource in resources)
+                {
+                    <tr>
+                        <td class="ps-4 fw-semibold">@resource.Name</td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(resource.Id)">Редактировать</button>
+                            <button class="btn btn-sm btn-primary" @onclick="() => ChangeState(resource.Id)">@(currentState == State.InWork ? "В архив" : "В работу")</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteResource(resource.Id)">Удалить</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<ResourceCreate Show="@showCreateModal"
+                ShowChanged="@((bool value) => showCreateModal = value)"
+                OnResourceCreated="@RefreshResources" />
+
+<ResourceUpdate 
+    Show="@showEditModal" 
+    ShowChanged="@((bool value) => showEditModal = value)" 
+    Resource="@selectedResource" 
+    OnResourceUpdated="@RefreshResources" />
+
+@code {
+    private List<ResourceDto>? resources;
+    private State currentState = State.InWork;
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
+    private ResourceUpdateDto? selectedResource;
+    private Notification? _notification;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadResources(currentState);
+    }
+
+    private async Task LoadResources(State state)
+    {
+        currentState = state;
+        await RefreshResources();
+    }
+
+    private async Task RefreshResources()
+    {
+        HttpResponseMessage response = await Http.GetAsync(Routes.Resources.Api);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        List<ResourceDto>? allResources = await response.Content.ReadFromJsonAsync<List<ResourceDto>>();
+
+        resources = allResources?.Where(r => r.State == currentState).ToList();
+    }
+
+    private void ShowCreateModal()
+    {
+        showCreateModal = true;
+    }
+
+    private async Task ShowUpdateModal(int id)
+    {
+        HttpResponseMessage response = await Http.GetAsync(Routes.TransformUrl(Routes.Resources.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        ResourceDto? resource = await response.Content.ReadFromJsonAsync<ResourceDto>();
+
+        selectedResource = new() { 
+            Id = resource!.Id,
+            Name = resource.Name,
+            State = resource.State
+        };
+        showEditModal = true;
+    }
+
+
+    private async Task ChangeState(int id)
+    {
+        HttpResponseMessage response = await Http.PatchAsync(Routes.TransformUrl(Routes.Resources.Api, id), null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        await LoadResources(currentState);
+
+        _notification?.ShowAsync("Успешно!", false);
+    }
+
+    private async Task DeleteResource(int id)
+    {
+        HttpResponseMessage response = await Http.DeleteAsync(Routes.TransformUrl(Routes.Resources.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        await LoadResources(currentState);
+
+        _notification?.ShowAsync("Ресурс успешно удален!", false);
+    }
+}

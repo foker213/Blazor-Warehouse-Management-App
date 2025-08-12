@@ -1,0 +1,276 @@
+﻿@attribute [Route(Routes.Shipments.Base)]
+@inject HttpClient Http
+
+<Notification @ref="_notification" />
+
+<h3 class="mb-4 text-primary">Документы отгрузки</h3>
+
+<div class="mb-3">
+    <div class="row">
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Ресурс</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedResourceFilters" multiple>
+                @foreach (var resource in _availableResources)
+                {
+                    <option value="@resource" class="filter-option">@resource</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Единицы</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedUnitFilters" multiple>
+                @foreach (var unit in _availableUnits)
+                {
+                    <option value="@unit" class="filter-option">@unit</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Клиенты</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedClientFilters" multiple>
+                @foreach (var client in _availableClients)
+                {
+                    <option value="@client" class="filter-option">@client</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted">Номера</label>
+            <select class="form-select filter-select" style="padding: 0" @bind="_selectedNumberFilters" multiple>
+                @foreach (var number in _availableNumbers)
+                {
+                    <option value="@number" class="filter-option">@number</option>
+                }
+            </select>
+            <small class="text-muted">Для выбора нескольких удерживайте Ctrl</small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted small">Дата от</label>
+            <input type="date" class="form-control form-control-sm" @bind="_dateStartFilter" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-muted small">Дата до</label>
+            <input type="date" class="form-control form-control-sm" @bind="_dateEndFilter" />
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-12 d-flex justify-content-end">
+            <button class="btn btn-primary me-2 filter-btn" @onclick="ApplyFilters">
+                <i class="bi bi-funnel me-1"></i> Применить
+            </button>
+            <button class="btn btn-outline-secondary filter-btn" @onclick="ClearFilters">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <button class="btn btn-success" @onclick="ShowCreateModal">
+        <i class="bi bi-plus-circle"></i> Добавить
+    </button>
+</div>
+
+@if (_shipmentDocuments == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-responsive rounded-3 shadow-sm">
+        <table class="table table-hover align-middle mb-0 bg-white">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Номер</th>
+                    <th>Дата</th>
+                    <th>Клиент</th>
+                    <th>Статус</th>
+                    <th>Ресурсы</th>
+                    <th>Единицы</th>
+                    <th>Кол-во</th>
+                    <th class="text-end pe-4">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var document in _shipmentDocuments)
+                {
+                    <tr class="position-relative">
+                        <td class="ps-4 fw-semibold">@document.Number</td>
+                        <td>@document.Date.ToString("dd.MM.yyyy")</td>
+                        <td>@document.Client.Name</td>
+                        <td>
+                            <span class="badge @(document.Status == Status.Signed ? "bg-success" : "bg-warning text-dark")">
+                                @(document.Status == Status.Signed ? "Подписан" : "Не подписан")
+                            </span>
+                        </td>
+                        <td>
+                            @if (document.HasResources())
+                            {
+                                <div class="d-flex flex-column gap-1">
+                                    @foreach (var resource in document.ShipmentResources!)
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">@resource.Resource.Name</span>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            @if (document.HasResources())
+                            {
+                                <div class="d-flex flex-column gap-1">
+                                    @foreach (var resource in document.ShipmentResources!)
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">@resource.UnitOfMeasure.Name</span>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            @if (document.HasResources())
+                            {
+                                <div class="d-flex flex-column gap-1">
+                                    @foreach (var resource in document.ShipmentResources!)
+                                    {
+                                        <span class="badge bg-info bg-opacity-10 text-info">@resource.Quantity</span>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowUpdateModal(document.Id)">Редактировать</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteDocument(document.Id)">Удалить</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<ShipmentCreate Show="@_showCreateModal"
+                ShowChanged="@((bool value) => _showCreateModal = value)"
+                OnShipmentCreated="@RefreshDocuments" />
+
+<ShipmentUpdate Show="@_showUpdateModal"
+                ShowChanged="@((bool value) => _showUpdateModal = value)"
+                OnShipmentUpdated="@RefreshDocuments" 
+                ShipmentId="@_openedDocumentId" />
+
+@code {
+    private List<ShipmentDocumentDto>? _shipmentDocuments;
+    private bool _showCreateModal = false;
+    private bool _showUpdateModal = false;
+    private Notification? _notification;
+    private int _openedDocumentId;
+
+    private string[] _selectedResourceFilters = Array.Empty<string>();
+    private string[] _selectedUnitFilters = Array.Empty<string>();
+    private string[] _selectedClientFilters = Array.Empty<string>();
+    private string[] _selectedNumberFilters = Array.Empty<string>();
+    private DateTime? _dateStartFilter;
+    private DateTime? _dateEndFilter;
+
+    private List<string> _availableResources = new();
+    private List<string> _availableUnits = new();
+    private List<string> _availableClients = new();
+    private List<string> _availableNumbers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFilterOptions();
+        await RefreshDocuments();
+    }
+
+    private async Task LoadFilterOptions()
+    {
+        var resources = await Http.GetFromJsonAsync<List<ResourceDto>>(Routes.Resources.Api) ?? new();
+        var units = await Http.GetFromJsonAsync<List<UnitDto>>(Routes.Units.Api) ?? new();
+        var clients = await Http.GetFromJsonAsync<List<ClientDto>>(Routes.Clients.Api) ?? new();
+
+        _availableResources.AddRange(resources.Select(x => x.Name));
+        _availableUnits.AddRange(units.Select(x => x.Name));
+        _availableClients.AddRange(clients.Select(x => x.Name));
+    }
+
+    private async Task ApplyFilters()
+    {
+        var filter = new FilterDto
+        {
+            Resources = _selectedResourceFilters.ToList(),
+            UnitsOfMeasure = _selectedUnitFilters.ToList(),
+            Clients = _selectedClientFilters.ToList(),
+            Numbers = _selectedNumberFilters.ToList(),
+            DateStart = _dateStartFilter.HasValue ? DateOnly.FromDateTime(_dateStartFilter.Value) : null,
+            DateEnd = _dateEndFilter.HasValue ? DateOnly.FromDateTime(_dateEndFilter.Value) : null
+        };
+
+        var response = await Http.PostAsJsonAsync($"{Routes.Shipments.Api}/filter", filter);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _shipmentDocuments = await response.Content.ReadFromJsonAsync<List<ShipmentDocumentDto>>();
+    }
+
+    private async Task ClearFilters()
+    {
+        _selectedResourceFilters = Array.Empty<string>();
+        _selectedUnitFilters = Array.Empty<string>();
+        _selectedClientFilters = Array.Empty<string>();
+        _selectedNumberFilters = Array.Empty<string>();
+        _dateStartFilter = null;
+        _dateEndFilter = null;
+
+        await RefreshDocuments();
+    }
+
+    private async Task RefreshDocuments()
+    {
+        var response = await Http.GetAsync(Routes.Shipments.Api);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _shipmentDocuments = await response.Content.ReadFromJsonAsync<List<ShipmentDocumentDto>>() ?? new();
+        _availableNumbers.AddRange(_shipmentDocuments.Select(x => x.Number));
+    }
+
+    private void ShowCreateModal()
+    {
+        _showCreateModal = true;
+    }
+
+    private void ShowUpdateModal(int id)
+    {
+        _openedDocumentId = id;
+        _showUpdateModal = true;
+    }
+
+    private async Task DeleteDocument(int id)
+    {
+        HttpResponseMessage response = await Http.DeleteAsync(Routes.TransformUrl(Routes.Shipments.Api, id));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _notification?.ShowAsync(await response.Content.ReadAsStringAsync());
+            return;
+        }
+
+        _notification?.ShowAsync("Документ был успешно удален!", false);
+        await RefreshDocuments();
+    }
+}
+

@@ -1,0 +1,26 @@
+﻿@using WarehouseManagement.Contracts
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (NavigationManager.Uri.EndsWith(NavigationManager.BaseUri))
+        {
+            NavigationManager.NavigateTo(Routes.Balances.Base);
+        }
+        base.OnInitialized();
+    }
+}

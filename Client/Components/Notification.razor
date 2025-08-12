@@ -1,0 +1,69 @@
+﻿@using System.Text.Json
+@if (IsVisible)
+{
+    <div class="notification @_notificationClass" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <div class="alert @_alertClass alert-dismissible fade show" style="margin: 0" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="notification-icon @_iconClass me-2"></i>
+                <span>@Message</span>
+                <button type="button" class="btn-close ms-auto" @onclick="Dismiss"></button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsError { get; set; } = true;
+
+    public bool IsVisible { get; set; }
+
+    private string _notificationClass => IsError ? "error" : "success";
+    private string _alertClass => IsError ? "alert-danger" : "alert-success";
+    private string _iconClass => IsError ? "bi bi-exclamation-circle-fill error" : "bi bi-check-circle-fill success";
+
+    private bool _isFadingOut = false;
+
+    public async Task ShowAsync(string message, bool isError = true)
+    {
+        if(isError)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(message);
+            
+                if (doc.RootElement.TryGetProperty("detail", out var detail))
+                    message = detail.GetString()!;
+            }
+            catch
+            { }
+        }
+
+        Message = message;
+        IsError = isError;
+        _isFadingOut = false;
+        IsVisible = true;
+        StateHasChanged();
+
+        await Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            await Dismiss();
+        });
+    }
+
+    private async Task Dismiss()
+    {
+        if (_isFadingOut) return;
+
+        _isFadingOut = true;
+        StateHasChanged();
+        await Task.Delay(100);
+        IsVisible = false;
+        _isFadingOut = false;
+        StateHasChanged();
+    }
+}
