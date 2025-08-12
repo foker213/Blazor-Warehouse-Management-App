@@ -7,26 +7,16 @@ namespace WarehouseManagement.Application.IServices;
 public interface IReceiptResourceService
 {
     /// <summary>
-    /// Обрабатывает создание ресурсов поставки и соответствующие изменения балансов
+    /// Обрабатывает создание ресурсов поставки
     /// </summary>
-    Task<ErrorOr<List<Balance>>> ProcessResourcesAsync(
+    ErrorOr<Success> ProcessResources(
         ReceiptDocument document,
-        List<ReceiptResourceCreateDto> resources,
-        CancellationToken ct);
+        List<ReceiptResourceCreateDto> resources);
 
     /// <summary>
-    /// Обрабатывает обновление ресурсов поставки и соответствующие изменения балансов
+    /// Обрабатывает обновление ресурсов поставки
     /// </summary>
-    Task<ErrorOr<List<Balance>>> ProcessResourceUpdatesAsync(
+    ErrorOr<List<ReceiptResource>> ProcessResourceUpdates(
         ReceiptDocument document,
-        List<ReceiptResource> existingResources,
-        List<ReceiptResource> deletedResources,
-        CancellationToken ct);
-
-    /// <summary>
-    /// Обрабатывает удаление ресурсов поставки и соответствующие изменения балансов
-    /// </summary>
-    Task<ErrorOr<List<Balance>>> ProcessResourceDeletionsAsync(
-        List<ReceiptResource> deletedResources,
-        CancellationToken ct);
+        List<ReceiptResourceUpdateDto> ReceiptResources);
 }

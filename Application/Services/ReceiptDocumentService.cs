@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using Mapster;
+using System.Data.Common;
 using WarehouseManagement.Application;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Application.IServices;
@@ -10,20 +11,24 @@ using WarehouseManagement.Domain.Models;
 internal sealed class ReceiptDocumentService : IReceiptDocumentService
 {
     private readonly IReceiptDocumentRepository _documentRepository;
-    private readonly IBalanceRepository _balanceRepository;
     private readonly IReceiptResourceService _resourceService;
+    private readonly IBalanceService _balanceService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ISynchronizationService _syncService;
+
 
     public ReceiptDocumentService(
         IReceiptDocumentRepository documentRepository,
-        IBalanceRepository balanceRepository,
         IReceiptResourceService resourceService,
-        IUnitOfWork unitOfWork)
+        IBalanceService balanceService,
+        IUnitOfWork unitOfWork,
+        ISynchronizationService syncService)
     {
         _documentRepository = documentRepository;
-        _balanceRepository = balanceRepository;
         _resourceService = resourceService;
+        _balanceService = balanceService;
         _unitOfWork = unitOfWork;
+        _syncService = syncService;
     }
 
     public async Task<List<ReceiptDocumentDto>> GetAll(CancellationToken ct)
@@ -42,10 +47,10 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
 
     public async Task<ErrorOr<Created>> CreateAsync(ReceiptDocumentCreateDto receipt, CancellationToken ct)
     {
-        var documentResult = await CreateDocumentAsync(receipt, ct);
+        ErrorOr<ReceiptDocument> documentResult = await CreateDocumentAsync(receipt, ct);
         if (documentResult.IsError) return documentResult.Errors.First();
 
-        var document = documentResult.Value;
+        ReceiptDocument document = documentResult.Value;
 
         if (receipt.ReceiptResources is null || receipt.ReceiptResources.Count == 0)
         {
@@ -53,10 +58,40 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             return Result.Created;
         }
 
-        var balancesResult = await _resourceService.ProcessResourcesAsync(document, receipt.ReceiptResources, ct);
-        if (balancesResult.IsError) return balancesResult.Errors.First();
+        List<IDisposable> locks = new();
 
-        return await SaveDocumentWithBalances(document, balancesResult.Value, ct);
+        try
+        {
+            var futureChanges = receipt.ReceiptResources
+                .Select(x => (x.ResourceId, x.UnitOfMeasureId))
+                .ToList();
+
+            locks = await AcquireLocksForBalanceChanges(futureChanges);
+
+            ErrorOr<Success> result = _resourceService.ProcessResources(document, receipt.ReceiptResources);
+
+            if (result.IsError)
+                return result.Errors.First();
+
+            ErrorOr<List<Balance>> balancesResult = await _balanceService.ProcessBalancesAsync(
+                document,
+                receipt.ReceiptResources,
+                ct);
+
+            if (balancesResult.IsError)
+                return balancesResult.Errors.First();
+
+            return await SaveDocumentWithBalances(document, balancesResult.Value, ct);
+        }
+        catch
+        {
+            return Error.Conflict("TransactionFailed", $"Ошибка при изменении балансов");
+        }
+        finally
+        {
+            foreach (IDisposable lockObj in locks)
+                lockObj.Dispose();
+        }
     }
 
     public async Task<ErrorOr<Updated>> UpdateAsync(ReceiptDocumentUpdateDto receipt, CancellationToken ct)
@@ -74,43 +109,43 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             existingDocument.Update(receipt.Number, DateOnly.FromDateTime(receipt.Date));
         }
 
-        List<ReceiptResource> deletedReceiptsResource = new();
+        List<IDisposable> locks = new();
 
-        if (receipt.ReceiptResources is null || receipt.ReceiptResources.Count == 0)
+        try
         {
-            deletedReceiptsResource.AddRange(existingDocument.ReceiptResources);
-            existingDocument.RemoveResources(deletedReceiptsResource);
-        }
-        else
-        {
-            deletedReceiptsResource = existingDocument.ReceiptResources
-                .Where(r => !receipt.ReceiptResources.Any(k =>
-                    k.Id == r.Id && k.Id != 0 &&
-                    k.UnitOfMeasureId == r.UnitOfMeasureId &&
-                    k.ResourceId == r.UnitOfMeasureId))
+            var futureChanges = receipt.ReceiptResources
+                .Select(x => (x.ResourceId, x.UnitOfMeasureId))
                 .ToList();
 
-            existingDocument.RemoveResources(deletedReceiptsResource);
+            locks = await AcquireLocksForBalanceChanges(futureChanges);
 
-            foreach (var receiptResource in receipt.ReceiptResources)
-            {
-                existingDocument.AddResource(
-                    receiptResource.ResourceId,
-                    receiptResource.UnitOfMeasureId,
-                    receiptResource.Quantity,
-                    receiptResource.Id);
-            }
+            ErrorOr<List<ReceiptResource>> result = _resourceService.ProcessResourceUpdates(existingDocument, receipt.ReceiptResources);
+
+            if (result.IsError)
+                return result.Errors.First();
+
+            List<ReceiptResource> deletedReceiptsResource = result.Value;
+
+            ErrorOr<List<Balance>> balancesResult = await _balanceService.ProcessBalanceUpdatesAsync(
+                existingDocument,
+                existingDocument.ReceiptResources.ToList(),
+                deletedReceiptsResource,
+                ct);
+
+            if (balancesResult.IsError) 
+                return balancesResult.Errors.First();
+
+            return await UpdateDocumentWithBalances(existingDocument, balancesResult.Value, ct);
         }
-
-        var balancesResult = await _resourceService.ProcessResourceUpdatesAsync(
-            existingDocument,
-            existingDocument.ReceiptResources.ToList(),
-            deletedReceiptsResource,
-            ct);
-
-        if (balancesResult.IsError) return balancesResult.Errors.First();
-
-        return await UpdateDocumentWithBalances(existingDocument, balancesResult.Value, ct);
+        catch
+        {
+            return Error.Conflict("TransactionFailed", $"Ошибка при изменении балансов");
+        }
+        finally
+        {
+            foreach (var lockObj in locks)
+                lockObj.Dispose();
+        }
     }
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(int id, CancellationToken ct)
@@ -125,15 +160,34 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
             return Result.Deleted;
         }
 
-        var balancesResult = await _resourceService.ProcessResourceUpdatesAsync(
-            existingDocument,
-            new List<ReceiptResource>(),
-            existingDocument.ReceiptResources.ToList(),
-            ct);
+        List<IDisposable> locks = new();
 
-        if (balancesResult.IsError) return balancesResult.Errors.First();
+        try
+        {
+            var futureChanges = existingDocument.ReceiptResources
+                .Select(x => (x.ResourceId, x.UnitOfMeasureId))
+                .ToList();
 
-        return await DeleteDocumentWithBalances(existingDocument, balancesResult.Value, ct);
+            locks = await AcquireLocksForBalanceChanges(futureChanges);
+
+            ErrorOr<List<Balance>> balancesResult = await _balanceService.ProcessBalanceUpdatesAsync(existingDocument,
+                                                                                                     new List<ReceiptResource>(),
+                                                                                                     existingDocument.ReceiptResources.ToList(),
+                                                                                                     ct);
+
+            if (balancesResult.IsError) return balancesResult.Errors.First();
+
+            return await DeleteDocumentWithBalances(existingDocument, balancesResult.Value, ct);
+        }
+        catch
+        {
+            return Error.Conflict("TransactionFailed", $"Ошибка при изменении балансов");
+        }
+        finally
+        {
+            foreach (IDisposable lockObj in locks)
+                lockObj.Dispose();
+        }
     }
 
     public async Task<List<ReceiptDocumentDto>> FilterAsync(FilterDto filter, CancellationToken ct)
@@ -160,17 +214,11 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
         List<Balance> balances,
         CancellationToken ct)
     {
-        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        await using DbTransaction? transaction = await _unitOfWork.BeginTransactionAsync(ct);
 
         _documentRepository.Add(document);
 
-        foreach (var balance in balances)
-        {
-            if (balance.CheckExistInDb())
-                _balanceRepository.Update(balance);
-            else
-                _balanceRepository.Add(balance);
-        }
+        _balanceService.Add(balances);
 
         Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
         return errorWhenSave is null ? Result.Created : errorWhenSave.Value;
@@ -181,19 +229,11 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
         List<Balance> balances,
         CancellationToken ct)
     {
-        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        await using DbTransaction? transaction = await _unitOfWork.BeginTransactionAsync(ct);
 
         _documentRepository.Update(document);
 
-        foreach (var balance in balances)
-        {
-            if (balance.Quantity == 0)
-                _balanceRepository.Remove(balance);
-            else if (balance.Id == 0)
-                _balanceRepository.Add(balance);
-            else
-                _balanceRepository.Update(balance);
-        }
+        _balanceService.Update(balances);
 
         Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
         return errorWhenSave is null ? Result.Updated : errorWhenSave.Value;
@@ -204,19 +244,29 @@ internal sealed class ReceiptDocumentService : IReceiptDocumentService
         List<Balance> balances,
         CancellationToken ct)
     {
-        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        await using DbTransaction? transaction = await _unitOfWork.BeginTransactionAsync(ct);
 
         _documentRepository.Remove(document);
 
-        foreach (var balance in balances)
-        {
-            if (balance.Quantity == 0)
-                _balanceRepository.Remove(balance);
-            else
-                _balanceRepository.Update(balance);
-        }
+        _balanceService.Remove(balances);
 
         Error? errorWhenSave = await _unitOfWork.CommitTransactionAsync(ct);
         return errorWhenSave is null ? Result.Deleted : errorWhenSave.Value;
+    }
+
+    private async Task<List<IDisposable>> AcquireLocksForBalanceChanges(
+        List<(int ResourceId, int UnitId)> changes)
+    {
+        var distinctChanges = changes.Distinct().ToList();
+        distinctChanges.Sort();
+
+        List<IDisposable> locks = new();
+        foreach (var (resourceId, unitId) in distinctChanges)
+        {
+            var lockObj = await _syncService.AcquireLockAsync(resourceId, unitId);
+            locks.Add(lockObj);
+        }
+
+        return locks;
     }
 }

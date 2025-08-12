@@ -41,7 +41,7 @@ public class ReceiptResource : Entity
         int quantity,
         int documentId)
     {
-        if (quantity <= 0)
+        if (quantity < 0)
             return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
 
         return new ReceiptResource

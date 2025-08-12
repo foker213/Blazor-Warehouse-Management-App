@@ -30,7 +30,7 @@ public class ReceiptDocumentsController : ControllerBase
         var result = await _receiptDocumentService.GetBy(id, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
-            return NotFound();
+            return NotFound(result.FirstError.Description);
 
         if (result.IsError)
             return Problem(result.FirstError.Description);
@@ -64,7 +64,7 @@ public class ReceiptDocumentsController : ControllerBase
             return BadRequest(result.FirstError.Description);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
-            return NotFound();
+            return NotFound(result.FirstError.Description);
 
         if (result.IsError && result.FirstError.Type == ErrorType.Conflict)
             return Conflict(result.FirstError.Description);
@@ -81,7 +81,7 @@ public class ReceiptDocumentsController : ControllerBase
         var result = await _receiptDocumentService.DeleteAsync(id, ct);
 
         if (result.IsError && result.FirstError.Type == ErrorType.NotFound)
-            return NotFound();
+            return NotFound(result.FirstError.Description);
 
         if (result.IsError)
             return Problem(result.FirstError.Description);

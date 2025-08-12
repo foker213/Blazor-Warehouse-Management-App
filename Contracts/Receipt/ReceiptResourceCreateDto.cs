@@ -8,6 +8,6 @@ public class ReceiptResourceCreateDto
 
     public int UnitOfMeasureId { get; set; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть положительным")]
+    [Range(0, int.MaxValue, ErrorMessage = "Количество должно быть положительным")]
     public int Quantity { get; set; }
 }

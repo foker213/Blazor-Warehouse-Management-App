@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Application.IRepositories;
 using WarehouseManagement.Contracts;
+using WarehouseManagement.Domain;
 using WarehouseManagement.Domain.Models;
 
 namespace WarehouseManagement.DataBase.Repositories;
@@ -34,6 +35,23 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
         IQueryable<ShipmentDocument> query = GetQuery(true);
         return await query.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
     }
+
+    public override async Task UpdateAsync(ShipmentDocument document, CancellationToken ct = default)
+    {
+        var existingResources = await _db.Set<ShipmentResource>().AsNoTracking()
+            .Where(r => r.ShipmentDocumentId == document.Id)
+            .ToListAsync(ct);
+
+        var resourcesToDelete = existingResources
+            .Where(dbResource => !document.ShipmentResources.Any(docResource => docResource.Id == dbResource.Id))
+            .ToList();
+
+        _db.Set<ShipmentResource>().RemoveRange(resourcesToDelete);
+
+        DbSet.Update(document);
+        await _db.SaveChangesAsync(ct);
+    }
+
 
     public async Task<List<ShipmentDocument>> FilterAsync(FilterDto filter, CancellationToken ct = default)
     {
@@ -76,7 +94,19 @@ internal sealed class ShipmentDocumentRepository(WarehouseDbContext db) :
         => DbSet.Add(document);
 
     public void Update(ShipmentDocument document)
-        => DbSet.Update(document);
+    {
+        var existingResources = _db.Set<ShipmentResource>().AsNoTracking()
+            .Where(r => r.ShipmentDocumentId == document.Id)
+            .ToList();
+
+        var resourcesToDelete = existingResources
+            .Where(dbResource => !document.ShipmentResources.Any(docResource => docResource.Id == dbResource.Id))
+            .ToList();
+
+        _db.Set<ShipmentResource>().RemoveRange(resourcesToDelete);
+
+        DbSet.Update(document);
+    }
 
     public void Remove(ShipmentDocument document)
         => DbSet.Remove(document);

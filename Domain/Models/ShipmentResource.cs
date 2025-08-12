@@ -39,7 +39,7 @@ public class ShipmentResource : Entity
         int quantity,
         int documentId)
     {
-        if (quantity <= 0)
+        if (quantity < 0)
             return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
 
         return new ShipmentResource
@@ -59,6 +59,9 @@ public class ShipmentResource : Entity
 
     public int RecalculateDifference()
     {
+        if (_oldQuantity > 0)
+            return _oldQuantity - Quantity;
+
         return Quantity - _oldQuantity;
     }
 }

@@ -186,7 +186,7 @@
             return;
         }
 
-        Model = new() { Date = DateTime.Now, Status = Status.NotSigned };
+        Model = new() { Date = DateTime.Now, Status = Status.NotSigned, ShipmentResources = new() };
         await OnShipmentCreated.InvokeAsync();
 
         _notification?.ShowAsync("Документ был успешно создан!", false);

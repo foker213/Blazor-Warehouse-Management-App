@@ -79,7 +79,7 @@ public sealed class Seeder
         {
             logger.LogInformation("Seeding shipment resources...");
 
-            foreach (var el in ShipmentResources.Get())
+            foreach (var el in ShipmentResources.Get()) 
                 db.Add(el);
         }
 

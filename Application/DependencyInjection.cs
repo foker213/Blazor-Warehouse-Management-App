@@ -12,7 +12,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         // Configuring Mapster
-        var typeAdapterConfig = TypeAdapterConfig.GlobalSettings;
+        TypeAdapterConfig? typeAdapterConfig = TypeAdapterConfig.GlobalSettings;
         typeAdapterConfig.Scan(Assembly.GetExecutingAssembly());
 
         services.AddSingleton(typeAdapterConfig);

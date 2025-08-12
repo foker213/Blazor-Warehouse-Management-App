@@ -69,7 +69,7 @@ public class ShipmentDocument : Entity
 
     public ErrorOr<ShipmentResource> AddResource(int resourceId, int unitId, int quantity, int id = 0)
     {
-        if (quantity <= 0)
+        if (quantity < 0)
             return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
 
         ShipmentResource? existingResource = _shipmentResources.FirstOrDefault(r =>

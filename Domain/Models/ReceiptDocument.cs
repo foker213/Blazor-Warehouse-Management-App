@@ -46,7 +46,7 @@ public class ReceiptDocument : Entity
 
     public ErrorOr<Success> AddResource(int resourceId, int unitId, int quantity, int id = 0)
     {
-        if (quantity <= 0)
+        if (quantity < 0)
             return Error.Validation("InvalidQuantity", "Количество должно быть положительным");
 
         ReceiptResource? existingResource = _receiptResources.FirstOrDefault(r =>
